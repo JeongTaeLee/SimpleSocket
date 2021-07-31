@@ -10,7 +10,7 @@ namespace SimpleSocket.Server
 
         public SocketListenerConfig listenerConfig { get; private set; } = null;
 
-        public bool running { get; protected set; } = false;
+        public bool running { get; private set; } = false;
 
         public Action<Exception, string> onError { get; set; }
         public Func<Socket, ValueTask<bool>> onAccept { get; set; }
@@ -32,12 +32,16 @@ namespace SimpleSocket.Server
             return true;
         }
 
+        protected virtual void OnStart() { }
+        
+        protected virtual void OnClose() { }
+        
         protected virtual void OnError(Exception ex, string msg = null)
         {   
             onError?.Invoke(ex, msg);
         }
         
-        public virtual void Start()
+        public void Start()
         {
             try
             {    
@@ -47,6 +51,9 @@ namespace SimpleSocket.Server
                 }
                 
                 socket = new Socket(listenerConfig.socketType, listenerConfig.protocolType);
+                
+                OnStart();
+
                 running = true;
             }
             catch (Exception ex)
@@ -59,12 +66,14 @@ namespace SimpleSocket.Server
             }
         }
 
-        public virtual void Close()
+        public void Close()
         {
+            running = false;
+            
+            OnClose();
+            
             socket?.Close();
             socket = null;
-            
-            running = false;
         }
 
     }

@@ -26,6 +26,9 @@ namespace SimpleSocket.Server
         private readonly ConcurrentDictionary<(string, int), ListenerPair> _listenerPairs =
             new ConcurrentDictionary<(string, int), ListenerPair>();
 
+        private readonly ConcurrentDictionary<string, SocketSession> _sessions =
+            new ConcurrentDictionary<string, SocketSession>();
+
         public bool running { get; private set; } = false;
 
         public Action<Exception, string> onError { get; set; } = null;
@@ -66,7 +69,7 @@ namespace SimpleSocket.Server
                 }
                 catch (Exception ex)
                 {
-                    OnError(ex);
+                    OnError(ex, "[SocketServer.StopAllListener] listener stop failed");
                 }
             }
         }
@@ -95,28 +98,81 @@ namespace SimpleSocket.Server
         {   
             onError?.Invoke(ex, message);
         }
+
+        private string GenAndBookingSessionId()
+        {
+            var id = string.Empty;
+
+            do
+            {
+                id = Guid.NewGuid().ToString();
+            } while (!_sessions.TryAdd(id, default(SocketSession)));
+
+            return id;
+        }
         
         // 
         protected virtual ValueTask<bool> OnAccept(Socket sck)
         {
-            return ValueTask.FromResult(true);
+            var newSessionId = GenAndBookingSessionId();
+            
+            try
+            {
+                if (string.IsNullOrEmpty(newSessionId))
+                {
+                    throw new Exception("Session Id generation failed");
+                }
+                
+                var newSession = CreateSession(newSessionId);
+                _sessions[newSessionId] = newSession;
+                
+                newSession.Start(sck);
+
+                return ValueTask.FromResult(true);
+            }
+            catch (Exception ex)
+            {
+                OnError(ex, "[SocketServer.OnAccept] Socket accept failed");
+
+                _sessions.TryRemove(newSessionId, out var _);
+                
+                return ValueTask.FromResult(false);
+            }
         }
         
+        protected virtual void OnStart() { }
+        
+        protected virtual void OnClose() { }
+        
         protected abstract SocketListener CreateListener(SocketListenerConfig config);
+        
+        protected abstract SocketSession CreateSession(string sessionId);
 
         //
         public void Start()
         {
-            running = true;
-            
-            StartAllListener();
+            try
+            {
+                StartAllListener();
+
+                OnStart();
+                
+                running = true;
+            }
+            catch
+            {
+                StopAllListener();
+                throw;
+            }
         }
 
         public void Close()
         {
-            StopAllListener();
-            
             running = false;
+            
+            OnClose();
+            
+            StopAllListener();
         }
 
         public SocketServer AddListener(SocketListenerConfig config)
@@ -154,6 +210,18 @@ namespace SimpleSocket.Server
                 }
             }
 
+            return this;
+        }
+
+        public SocketServer RemoveListener(string ip, int port)
+        {
+            if (!_listenerPairs.TryRemove((ip, port), out var listenerPair))
+            {
+                throw new Exception("[SocketServer.RemoveListener] Listener that does not exist.");
+            }
+            
+            listenerPair.listener.Close();
+            
             return this;
         }
     }

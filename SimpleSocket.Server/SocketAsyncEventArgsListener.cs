@@ -19,7 +19,7 @@ namespace SimpleSocket.Server
 
             try
             {
-                bool willRaiseEvent = socket.AcceptAsync(_acceptArgs);
+                var willRaiseEvent = socket.AcceptAsync(_acceptArgs);
                 if (!willRaiseEvent)
                 {
                     ProcessAccept(_acceptArgs);
@@ -52,12 +52,9 @@ namespace SimpleSocket.Server
         {
             ProcessAccept(e);
         }
-
         
-        public override void Start()
+        protected override void OnStart()
         {
-            base.Start();
-            
             try
             {
                 _acceptArgs = new SocketAsyncEventArgs();
@@ -72,12 +69,10 @@ namespace SimpleSocket.Server
             }
         }
 
-        public override void Close()
+        protected override void OnClose()
         {
             _acceptArgs?.Dispose();
             _acceptArgs = null;
-            
-            base.Close();
         }
     }
 }
