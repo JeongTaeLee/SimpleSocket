@@ -94,11 +94,6 @@ namespace SimpleSocket.Server
             listener.Start();
         }
 
-        private void OnError(Exception ex, string message = "")
-        {   
-            onError?.Invoke(ex, message);
-        }
-
         private string GenAndBookingSessionId()
         {
             var id = string.Empty;
@@ -110,22 +105,29 @@ namespace SimpleSocket.Server
 
             return id;
         }
-        
+
+        protected void OnError(Exception ex, string message = "")
+        {   
+            onError?.Invoke(ex, message);
+        }
+
         // 
         protected virtual ValueTask<bool> OnAccept(Socket sck)
         {
             var newSessionId = GenAndBookingSessionId();
-            
+
             try
             {
                 if (string.IsNullOrEmpty(newSessionId))
                 {
                     throw new Exception("Session Id generation failed");
                 }
-                
+
                 var newSession = CreateSession(newSessionId);
-                _sessions[newSessionId] = newSession;
+                newSession.onClose = OnSessionClose;
                 
+                _sessions[newSessionId] = newSession;
+
                 newSession.Start(sck);
 
                 return ValueTask.FromResult(true);
@@ -135,11 +137,28 @@ namespace SimpleSocket.Server
                 OnError(ex, "[SocketServer.OnAccept] Socket accept failed");
 
                 _sessions.TryRemove(newSessionId, out var _);
-                
+
                 return ValueTask.FromResult(false);
             }
         }
-        
+
+        protected virtual void OnSessionClose(SocketSession closeSession)
+        {
+            try
+            {
+                if (!_sessions.TryRemove(closeSession.sessionId, out var session))
+                {
+                    return;
+                }
+                
+                // TODO @jeongtae.lee : 종료 처리 추가.
+            }
+            catch (Exception ex)
+            {
+                OnError(ex, "");
+            }
+        } 
+
         protected virtual void OnStart() { }
         
         protected virtual void OnClose() { }
