@@ -106,6 +106,25 @@ namespace SimpleSocket.Server
             return id;
         }
 
+        private void InternalOnSessionClose(SocketSession closeSession)
+        {
+            try
+            {
+                if (!_sessions.TryRemove(closeSession.sessionId, out var session))
+                {
+                    return;
+                }
+                
+                OnSessionClose(closeSession);
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+                throw;
+            }
+
+        }
+
         protected void OnError(Exception ex, string message = "")
         {   
             onError?.Invoke(ex, message);
@@ -124,7 +143,7 @@ namespace SimpleSocket.Server
                 }
 
                 var newSession = CreateSession(newSessionId);
-                newSession.onClose = OnSessionClose;
+                newSession.onClose = InternalOnSessionClose;
                 
                 _sessions[newSessionId] = newSession;
 
@@ -142,22 +161,7 @@ namespace SimpleSocket.Server
             }
         }
 
-        protected virtual void OnSessionClose(SocketSession closeSession)
-        {
-            try
-            {
-                if (!_sessions.TryRemove(closeSession.sessionId, out var session))
-                {
-                    return;
-                }
-                
-                // TODO @jeongtae.lee : 종료 처리 추가.
-            }
-            catch (Exception ex)
-            {
-                OnError(ex, "");
-            }
-        } 
+        protected virtual void OnSessionClose(SocketSession closeSession)  { }
 
         protected virtual void OnStart() { }
         

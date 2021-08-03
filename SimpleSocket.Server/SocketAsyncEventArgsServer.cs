@@ -43,18 +43,26 @@ namespace SimpleSocket.Server
 
         protected override void OnSessionClose(SocketSession closeSession)
         {
+            if (closeSession == null)
+            {
+                throw new ArgumentNullException(nameof(closeSession));
+            }
+            
             try
             {
-                var convertedSession = closeSession as SocketAsyncEventArgsSession;
-                
-                _recvBufferManager.FreeBuffer(convertedSession.recvEventArgs);
-
+                if (closeSession is SocketAsyncEventArgsSession convertedSession)
+                {
+                    _recvBufferManager.FreeBuffer(convertedSession.recvEventArgs);
+                }
+                else
+                {
+                    throw new Exception($"Invalid session type - Invalid session type({closeSession.GetType().FullName})");
+                }
             }
             catch (Exception e)
             {
                 OnError(e, "Socket close failed");
             }
-            base.OnSessionClose(closeSession);
         }
     }
 }
