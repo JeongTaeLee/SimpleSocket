@@ -31,6 +31,7 @@ namespace SimpleSocket.Server
 
         public bool running { get; private set; } = false;
 
+        public Action<SocketSessionConfigurator> onNewSocketSessionConnected { get; set; } = null;
         public Action<Exception, string> onError { get; set; } = null;
 
         //
@@ -144,11 +145,12 @@ namespace SimpleSocket.Server
                 }
 
                 var newSession = CreateSession(newSessionId);
-                
                 _sessions[newSessionId] = newSession;
 
+                onNewSocketSessionConnected?.Invoke(new SocketSessionConfigurator(newSession));
+                
                 newSession.Start(newSessionId, sck, InternalOnSessionClose);
-
+                
                 return ValueTask.FromResult(true);
             }
             catch (Exception ex)

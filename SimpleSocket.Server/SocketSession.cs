@@ -41,8 +41,11 @@ namespace SimpleSocket.Server
     {
         private int _state = SocketSessionState.IDLE;
         public int state => _state;
-        
+
         private Action<SocketSession> _onClose = null;
+        
+        // TODO @jeongtae.lee : 요놈 사용하는거 구현.
+        private ISocketSessionEventHandler _socketSessionEventHandler = null;
 
         public string id { get; private set; } = string.Empty;
         public Socket socket { get; private set; } = null;
@@ -50,7 +53,7 @@ namespace SimpleSocket.Server
         protected virtual void OnStart() { }
         
         protected virtual void OnClose() { }
-        
+
         public void Start(string sessionId, Socket sck, Action<SocketSession> onClose)
         {
             var oldState = Interlocked.CompareExchange(ref _state, SocketSessionState.STARTING, SocketSessionState.IDLE); 
@@ -66,7 +69,6 @@ namespace SimpleSocket.Server
             try
             {
                 OnStart();
-
                 Interlocked.Exchange(ref _state, SocketSessionState.RUNNING);
             }
             catch
@@ -123,5 +125,11 @@ namespace SimpleSocket.Server
             
             socket.Send(buffer, offset, length, SocketFlags.None);
         }
+
+        public SocketSession SetSocketSessionEventHandler(ISocketSessionEventHandler socketSessionEventHandler)
+        {
+            _socketSessionEventHandler = socketSessionEventHandler ?? throw new ArgumentNullException(nameof(socketSessionEventHandler));
+            return this;
+        }   
     }
 }
