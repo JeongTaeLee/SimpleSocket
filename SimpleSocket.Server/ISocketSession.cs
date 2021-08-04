@@ -2,7 +2,7 @@ using System;
 
 namespace SimpleSocket.Server
 {
-    public interface ISession
+    public interface ISocketSession
     {
         void Close();
 

@@ -1,17 +1,17 @@
 using System;
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
 
 namespace SimpleSocket.Server
 {
-    // TODO @jeongtae.lee : 수신, 발신 중에 종료 시 처리 구현.
-    
     public class InvalidSocketSessionStateInMethodException : Exception
     {
-        public InvalidSocketSessionStateInMethodException(string oldState, string correctStateName, string calledMethodName, Exception innerException = null)  
-            : base($"Invalid session status. The \"{calledMethodName}\" method can only be called in the \"{correctStateName}\" state - Invalid state({oldState})", innerException)
+        public InvalidSocketSessionStateInMethodException(int oldState, int correctState, string calledMethodName, Exception innerException = null)  
+            : base($"Invalid session status. " +
+                   $"The \"{calledMethodName}\" method can only be called in the \"{SocketSessionState.Name(correctState)}\" state - " +
+                   $"Invalid state({SocketSessionState.Name(oldState)})", innerException)
         {
-            
         }
     }
     
@@ -25,47 +25,49 @@ namespace SimpleSocket.Server
 
         public const int TERMINATING = 200; // 종료 중.
         public const int TERMINATED = 201; // 종료됨.
+
+        public static string Name(int state) => state switch
+        {
+            IDLE => nameof(IDLE),
+            STARTING => nameof(STARTING),
+            RUNNING => nameof(RUNNING),
+            TERMINATING => nameof(TERMINATING),
+            TERMINATED => nameof(TERMINATED),
+            _ => "Error"
+        };
     }
 
-    public abstract class SocketSession : ISession
+    public abstract class SocketSession : ISocketSession
     {
         private int _state = SocketSessionState.IDLE;
         public int state => _state;
         
-        public readonly SocketServer server = null;
-        public readonly string sessionId = string.Empty;
+        private Action<SocketSession> _onClose = null;
 
+        public string id { get; private set; } = string.Empty;
         public Socket socket { get; private set; } = null;
-        public bool running { get; private set; } = false;
-        public Action<SocketSession> onClose { get; set; } = null;
-
+        
         protected virtual void OnStart() { }
         
         protected virtual void OnClose() { }
         
-        public SocketSession(SocketServer server, string sessionId)
-        {
-            this.server = server ?? throw new ArgumentNullException(nameof(server));
-            this.sessionId = string.IsNullOrEmpty(sessionId)
-                ? throw new ArgumentException(null, nameof(sessionId)) : sessionId;
-        }
-        
-        public void Start(Socket sck)
+        public void Start(string sessionId, Socket sck, Action<SocketSession> onClose)
         {
             var oldState = Interlocked.CompareExchange(ref _state, SocketSessionState.STARTING, SocketSessionState.IDLE); 
             if (SocketSessionState.IDLE != oldState)
             {
-                throw new InvalidSocketSessionStateInMethodException(oldState.ToString(), nameof(SocketSessionState.IDLE), nameof(Start));
+                throw new InvalidSocketSessionStateInMethodException(oldState, SocketSessionState.IDLE, nameof(Start));
             }
-            
+
+            id = string.IsNullOrEmpty(sessionId) ? throw new ArgumentException(null, nameof(sessionId)) : sessionId;
             socket = sck ?? throw new ArgumentNullException(nameof(sck));
+            _onClose = onClose ?? throw new ArgumentNullException(nameof(onClose));
             
             try
             {
                 OnStart();
 
                 Interlocked.Exchange(ref _state, SocketSessionState.RUNNING);
-                running = true;
             }
             catch
             {
@@ -79,21 +81,24 @@ namespace SimpleSocket.Server
             var oldState = Interlocked.CompareExchange(ref _state, SocketSessionState.TERMINATING, SocketSessionState.RUNNING); 
             if (SocketSessionState.RUNNING != oldState)
             {
-                throw new InvalidSocketSessionStateInMethodException(oldState.ToString(), nameof(SocketSessionState.RUNNING), nameof(Close));
+                throw new InvalidSocketSessionStateInMethodException(oldState, SocketSessionState.RUNNING, nameof(Close));
             }
             
             OnClose();
-            onClose.Invoke(this);
-            
+            _onClose.Invoke(this);
+
+            // NOTE @jeongtae.lee : _onClose에서 서버의 작업이 모두 끝난 후 값을 날려준다.
+            id = string.Empty;
+            socket = null;
+
             Interlocked.Exchange(ref _state, SocketSessionState.TERMINATED);
-            running = false;
         }
 
         public void Send(byte[] buffer)
         {
             if (SocketSessionState.RUNNING != _state)
             {
-                throw new InvalidSocketSessionStateInMethodException(_state.ToString(), nameof(SocketSessionState.RUNNING), nameof(Close));
+                throw new InvalidSocketSessionStateInMethodException(_state, SocketSessionState.RUNNING, nameof(Close));
             }
             
             Send(buffer, 0, buffer.Length);
@@ -103,7 +108,7 @@ namespace SimpleSocket.Server
         {
             if (SocketSessionState.RUNNING != _state)
             {
-                throw new InvalidSocketSessionStateInMethodException(_state.ToString(), nameof(SocketSessionState.RUNNING), nameof(Close));
+                throw new InvalidSocketSessionStateInMethodException(_state, SocketSessionState.RUNNING, nameof(Close));
             }
             
             Send(segment.Array, segment.Offset, segment.Count);
@@ -113,7 +118,7 @@ namespace SimpleSocket.Server
         {
             if (SocketSessionState.RUNNING != _state)
             {
-                throw new InvalidSocketSessionStateInMethodException(_state.ToString(), nameof(SocketSessionState.RUNNING), nameof(Close));
+                throw new InvalidSocketSessionStateInMethodException(_state, SocketSessionState.RUNNING, nameof(Close));
             }
             
             socket.Send(buffer, offset, length, SocketFlags.None);

@@ -106,16 +106,17 @@ namespace SimpleSocket.Server
             return id;
         }
 
-        private void InternalOnSessionClose(SocketSession closeSession)
+        private void InternalOnSessionClose(SocketSession closeSocketSession)
         {
             try
             {
-                if (!_sessions.TryRemove(closeSession.sessionId, out var session))
+                if (!_sessions.TryRemove(closeSocketSession.id, out var session))
                 {
                     return;
                 }
                 
-                OnSessionClose(closeSession);
+                OnSessionClose(closeSocketSession);
+                closeSocketSession.socket.Close();
             }
             catch (Exception ex)
             {
@@ -143,11 +144,10 @@ namespace SimpleSocket.Server
                 }
 
                 var newSession = CreateSession(newSessionId);
-                newSession.onClose = InternalOnSessionClose;
                 
                 _sessions[newSessionId] = newSession;
 
-                newSession.Start(sck);
+                newSession.Start(newSessionId, sck, InternalOnSessionClose);
 
                 return ValueTask.FromResult(true);
             }
@@ -161,7 +161,7 @@ namespace SimpleSocket.Server
             }
         }
 
-        protected virtual void OnSessionClose(SocketSession closeSession)  { }
+        protected virtual void OnSessionClose(SocketSession closeSocketSession)  { }
 
         protected virtual void OnStart() { }
         

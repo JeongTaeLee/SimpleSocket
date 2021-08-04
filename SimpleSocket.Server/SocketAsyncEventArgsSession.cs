@@ -7,8 +7,7 @@ namespace SimpleSocket.Server
     {
         public readonly SocketAsyncEventArgs recvEventArgs = null;
         
-        public SocketAsyncEventArgsSession(SocketServer server, string sessionId, SocketAsyncEventArgs recvEventArgs) 
-            : base(server, sessionId)
+        public SocketAsyncEventArgsSession(SocketAsyncEventArgs recvEventArgs)
         {
             this.recvEventArgs = recvEventArgs ?? throw new ArgumentNullException(nameof(recvEventArgs));
         }
@@ -30,7 +29,10 @@ namespace SimpleSocket.Server
             }
             else
             {
-                Close();
+                if (SocketSessionState.RUNNING == base.state)
+                {
+                    Close();
+                }
             }
         }
 

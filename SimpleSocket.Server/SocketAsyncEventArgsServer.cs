@@ -38,25 +38,25 @@ namespace SimpleSocket.Server
             
             _recvBufferManager.SetBuffer(recvEventArgs);
 
-            return new SocketAsyncEventArgsSession(this, sessionId, recvEventArgs);
+            return new SocketAsyncEventArgsSession(recvEventArgs);
         }
 
-        protected override void OnSessionClose(SocketSession closeSession)
+        protected override void OnSessionClose(SocketSession closeSocketSession)
         {
-            if (closeSession == null)
+            if (closeSocketSession == null)
             {
-                throw new ArgumentNullException(nameof(closeSession));
+                throw new ArgumentNullException(nameof(closeSocketSession));
             }
             
             try
             {
-                if (closeSession is SocketAsyncEventArgsSession convertedSession)
+                if (closeSocketSession is SocketAsyncEventArgsSession convertedSocketSession)
                 {
-                    _recvBufferManager.FreeBuffer(convertedSession.recvEventArgs);
+                    _recvBufferManager.FreeBuffer(convertedSocketSession.recvEventArgs);
                 }
                 else
                 {
-                    throw new Exception($"Invalid session type - Invalid session type({closeSession.GetType().FullName})");
+                    throw new Exception($"Invalid session type - Invalid session type({closeSocketSession.GetType().FullName})");
                 }
             }
             catch (Exception e)
