@@ -56,7 +56,7 @@ namespace SimpleSocket.Server
 
                 running = true;
             }
-            catch (Exception ex)
+            catch
             {
                 socket?.Dispose();
                 socket = null;

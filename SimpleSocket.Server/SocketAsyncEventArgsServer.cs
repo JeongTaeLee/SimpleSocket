@@ -19,7 +19,7 @@ namespace SimpleSocket.Server
                 _socketAsyncEventArgsConfig.maxConnection);
         }
 
-        protected override void OnStart()
+        protected override void InternalOnStart()
         {
             _recvBufferManager.InitBuffer();
         }
@@ -41,7 +41,7 @@ namespace SimpleSocket.Server
             return new SocketAsyncEventArgsSession(recvEventArgs);
         }
 
-        protected override void OnSessionClose(SocketSession closeSocketSession)
+        protected override void InternalOnSessionClose(SocketSession closeSocketSession)
         {
             if (closeSocketSession == null)
             {

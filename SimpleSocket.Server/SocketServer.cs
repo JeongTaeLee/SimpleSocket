@@ -107,7 +107,7 @@ namespace SimpleSocket.Server
             return id;
         }
 
-        private void InternalOnSessionClose(SocketSession closeSocketSession)
+        private void OnSessionClose(SocketSession closeSocketSession)
         {
             try
             {
@@ -116,15 +116,16 @@ namespace SimpleSocket.Server
                     return;
                 }
                 
-                OnSessionClose(closeSocketSession);
+                InternalOnSessionClose(closeSocketSession);
+                
                 closeSocketSession.socket.Close();
+                closeSocketSession.OnClosed();
             }
             catch (Exception ex)
             {
                 OnError(ex);
                 throw;
             }
-
         }
 
         protected void OnError(Exception ex, string message = "")
@@ -149,7 +150,8 @@ namespace SimpleSocket.Server
 
                 onNewSocketSessionConnected?.Invoke(new SocketSessionConfigurator(newSession));
                 
-                newSession.Start(newSessionId, sck, InternalOnSessionClose);
+                newSession.Start(newSessionId, sck, OnSessionClose);
+                newSession.OnStarted();
                 
                 return ValueTask.FromResult(true);
             }
@@ -163,11 +165,11 @@ namespace SimpleSocket.Server
             }
         }
 
-        protected virtual void OnSessionClose(SocketSession closeSocketSession)  { }
+        protected virtual void InternalOnSessionClose(SocketSession closeSocketSession)  { }
 
-        protected virtual void OnStart() { }
+        protected virtual void InternalOnStart() { }
         
-        protected virtual void OnClose() { }
+        protected virtual void InternalOnClose() { }
         
         protected abstract SocketListener CreateListener(SocketListenerConfig config);
         
@@ -180,7 +182,7 @@ namespace SimpleSocket.Server
             {
                 StartAllListener();
 
-                OnStart();
+                InternalOnStart();
                 
                 running = true;
             }
@@ -195,7 +197,7 @@ namespace SimpleSocket.Server
         {
             running = false;
             
-            OnClose();
+            InternalOnClose();
             
             StopAllListener();
         }

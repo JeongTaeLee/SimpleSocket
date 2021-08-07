@@ -60,7 +60,7 @@ namespace SimpleSocket.Server
                 _acceptArgs = new SocketAsyncEventArgs();
                 _acceptArgs.Completed += OnAcceptCompleted;
             }
-            catch (Exception e)
+            catch
             {
                 _acceptArgs?.Dispose();
                 _acceptArgs = null;

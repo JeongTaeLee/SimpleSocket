@@ -25,7 +25,14 @@ namespace SimpleSocket.Server
         {
             if (args.BytesTransferred > 0 && args.SocketError == SocketError.Success)
             {
-                StartReceive(args);    
+                try
+                {
+                    // TODO @jeongtae.lee : receive 프로세스 구현
+                }
+                finally
+                {
+                    StartReceive(args);    
+                }
             }
             else
             {
@@ -36,9 +43,9 @@ namespace SimpleSocket.Server
             }
         }
 
-        protected override void OnStart()
+        protected override void InternalOnStart()
         {
-            base.OnStart();
+            base.InternalOnStart();
             
             StartReceive(recvEventArgs);
         }

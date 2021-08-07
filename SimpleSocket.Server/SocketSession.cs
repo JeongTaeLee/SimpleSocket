@@ -7,14 +7,15 @@ namespace SimpleSocket.Server
 {
     public class InvalidSocketSessionStateInMethodException : Exception
     {
-        public InvalidSocketSessionStateInMethodException(int oldState, int correctState, string calledMethodName, Exception innerException = null)  
+        public InvalidSocketSessionStateInMethodException(int oldState, int correctState, string calledMethodName,
+            Exception innerException = null)
             : base($"Invalid session status. " +
                    $"The \"{calledMethodName}\" method can only be called in the \"{SocketSessionState.Name(correctState)}\" state - " +
                    $"Invalid state({SocketSessionState.Name(oldState)})", innerException)
         {
         }
     }
-    
+
     // 값 바꾸지 말 것!
     public class SocketSessionState
     {
@@ -43,32 +44,50 @@ namespace SimpleSocket.Server
         public int state => _state;
 
         private Action<SocketSession> _onClose = null;
-        
-        // TODO @jeongtae.lee : 요놈 사용하는거 구현.
+
         private ISocketSessionEventHandler _socketSessionEventHandler = null;
 
         public string id { get; private set; } = string.Empty;
         public Socket socket { get; private set; } = null;
-        
-        protected virtual void OnStart() { }
-        
-        protected virtual void OnClose() { }
+
+        protected virtual void InternalOnStart()
+        {
+        }
+
+        protected virtual void InternalOnClose()
+        {
+        }
+
+        protected virtual void OnError(Exception ex, string msg = "")
+        {
+            _socketSessionEventHandler?.OnError(this, ex, msg);
+        }
 
         public void Start(string sessionId, Socket sck, Action<SocketSession> onClose)
         {
-            var oldState = Interlocked.CompareExchange(ref _state, SocketSessionState.STARTING, SocketSessionState.IDLE); 
+            var oldState = Interlocked.CompareExchange(
+                ref _state
+                , SocketSessionState.STARTING
+                , SocketSessionState.IDLE);
+            
             if (SocketSessionState.IDLE != oldState)
             {
-                throw new InvalidSocketSessionStateInMethodException(oldState, SocketSessionState.IDLE, nameof(Start));
+                throw new InvalidSocketSessionStateInMethodException(
+                    oldState
+                    , SocketSessionState.IDLE
+                    , nameof(Start));
             }
 
-            id = string.IsNullOrEmpty(sessionId) ? throw new ArgumentException(null, nameof(sessionId)) : sessionId;
+            id = string.IsNullOrEmpty(sessionId) 
+                ? throw new ArgumentException(null, nameof(sessionId)) 
+                : sessionId;
+            
             socket = sck ?? throw new ArgumentNullException(nameof(sck));
             _onClose = onClose ?? throw new ArgumentNullException(nameof(onClose));
-            
+
             try
             {
-                OnStart();
+                InternalOnStart();
                 Interlocked.Exchange(ref _state, SocketSessionState.RUNNING);
             }
             catch
@@ -80,13 +99,20 @@ namespace SimpleSocket.Server
 
         public void Close()
         {
-            var oldState = Interlocked.CompareExchange(ref _state, SocketSessionState.TERMINATING, SocketSessionState.RUNNING); 
+            var oldState = Interlocked.CompareExchange(
+                ref _state
+                , SocketSessionState.TERMINATING
+                , SocketSessionState.RUNNING);
+            
             if (SocketSessionState.RUNNING != oldState)
             {
-                throw new InvalidSocketSessionStateInMethodException(oldState, SocketSessionState.RUNNING, nameof(Close));
+                throw new InvalidSocketSessionStateInMethodException(
+                    oldState
+                    , SocketSessionState.RUNNING
+                    , nameof(Close));
             }
-            
-            OnClose();
+
+            InternalOnClose();
             _onClose.Invoke(this);
 
             // NOTE @jeongtae.lee : _onClose에서 서버의 작업이 모두 끝난 후 값을 날려준다.
@@ -96,13 +122,40 @@ namespace SimpleSocket.Server
             Interlocked.Exchange(ref _state, SocketSessionState.TERMINATED);
         }
 
+        public void OnStarted()
+        {
+            try
+            {
+                _socketSessionEventHandler?.OnSocketSessionStarted(this);
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+        }
+
+        public void OnClosed()
+        {
+            try
+            {
+                _socketSessionEventHandler?.OnSocketSessionClosed(this);
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+        }
+
         public void Send(byte[] buffer)
         {
             if (SocketSessionState.RUNNING != _state)
             {
-                throw new InvalidSocketSessionStateInMethodException(_state, SocketSessionState.RUNNING, nameof(Close));
+                throw new InvalidSocketSessionStateInMethodException(
+                    _state
+                    , SocketSessionState.RUNNING
+                    , nameof(Close));
             }
-            
+
             Send(buffer, 0, buffer.Length);
         }
 
@@ -110,26 +163,33 @@ namespace SimpleSocket.Server
         {
             if (SocketSessionState.RUNNING != _state)
             {
-                throw new InvalidSocketSessionStateInMethodException(_state, SocketSessionState.RUNNING, nameof(Close));
+                throw new InvalidSocketSessionStateInMethodException(
+                    _state
+                    , SocketSessionState.RUNNING
+                    , nameof(Close));
             }
-            
+
             Send(segment.Array, segment.Offset, segment.Count);
         }
-        
+
         public virtual void Send(byte[] buffer, int offset, int length)
         {
             if (SocketSessionState.RUNNING != _state)
             {
-                throw new InvalidSocketSessionStateInMethodException(_state, SocketSessionState.RUNNING, nameof(Close));
+                throw new InvalidSocketSessionStateInMethodException(
+                    _state
+                    , SocketSessionState.RUNNING
+                    , nameof(Close));
             }
-            
+
             socket.Send(buffer, offset, length, SocketFlags.None);
         }
 
         public SocketSession SetSocketSessionEventHandler(ISocketSessionEventHandler socketSessionEventHandler)
         {
-            _socketSessionEventHandler = socketSessionEventHandler ?? throw new ArgumentNullException(nameof(socketSessionEventHandler));
+            _socketSessionEventHandler = socketSessionEventHandler ??
+                                         throw new ArgumentNullException(nameof(socketSessionEventHandler));
             return this;
-        }   
+        }
     }
 }
