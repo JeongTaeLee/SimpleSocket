@@ -10,9 +10,9 @@ namespace SimpleSocket.Server
         
         private readonly BufferManager _recvBufferManager = null;
         
-        public SocketAsyncEventArgsServer(SocketAsyncEventArgsServerConfig socketAsyncEvnetArgsConfig)
+        public SocketAsyncEventArgsServer(SocketAsyncEventArgsServerConfig socketAsyncEventArgsConfig)
         {
-            _socketAsyncEventArgsConfig = socketAsyncEvnetArgsConfig ?? throw new ArgumentNullException(nameof(socketAsyncEvnetArgsConfig));
+            _socketAsyncEventArgsConfig = socketAsyncEventArgsConfig ?? throw new ArgumentNullException(nameof(socketAsyncEventArgsConfig));
 
             _recvBufferManager = new BufferManager(
                 _socketAsyncEventArgsConfig.recvBufferSize,

@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
 
@@ -88,7 +87,6 @@ namespace SimpleSocket.Server
             try
             {
                 InternalOnStart();
-                Interlocked.Exchange(ref _state, SocketSessionState.RUNNING);
             }
             catch
             {
@@ -114,18 +112,14 @@ namespace SimpleSocket.Server
 
             InternalOnClose();
             _onClose.Invoke(this);
-
-            // NOTE @jeongtae.lee : _onClose에서 서버의 작업이 모두 끝난 후 값을 날려준다.
-            id = string.Empty;
-            socket = null;
-
-            Interlocked.Exchange(ref _state, SocketSessionState.TERMINATED);
         }
 
         public void OnStarted()
         {
             try
             {
+                Interlocked.Exchange(ref _state, SocketSessionState.RUNNING);
+                
                 _socketSessionEventHandler?.OnSocketSessionStarted(this);
             }
             catch (Exception ex)
@@ -138,7 +132,12 @@ namespace SimpleSocket.Server
         {
             try
             {
+                Interlocked.Exchange(ref _state, SocketSessionState.TERMINATED);
+                
                 _socketSessionEventHandler?.OnSocketSessionClosed(this);
+                
+                id = string.Empty;
+                socket = null;
             }
             catch (Exception ex)
             {
@@ -153,7 +152,7 @@ namespace SimpleSocket.Server
                 throw new InvalidSocketSessionStateInMethodException(
                     _state
                     , SocketSessionState.RUNNING
-                    , nameof(Close));
+                    , nameof(Send));
             }
 
             Send(buffer, 0, buffer.Length);
@@ -166,7 +165,7 @@ namespace SimpleSocket.Server
                 throw new InvalidSocketSessionStateInMethodException(
                     _state
                     , SocketSessionState.RUNNING
-                    , nameof(Close));
+                    , nameof(Send));
             }
 
             Send(segment.Array, segment.Offset, segment.Count);
@@ -179,7 +178,7 @@ namespace SimpleSocket.Server
                 throw new InvalidSocketSessionStateInMethodException(
                     _state
                     , SocketSessionState.RUNNING
-                    , nameof(Close));
+                    , nameof(Send));
             }
 
             socket.Send(buffer, offset, length, SocketFlags.None);
