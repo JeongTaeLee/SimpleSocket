@@ -7,7 +7,7 @@ namespace SimpleSocket.Server
     {
         void OnSocketSessionStarted(ISocketSession session);
         void OnSocketSessionClosed(ISocketSession session);
-        void OnReceived(ISocketSession session, object receivedData);
+        ValueTask OnReceived(ISocketSession session, object receivedData);
         void OnError(ISocketSession session, Exception ex, string message);
     }
 }

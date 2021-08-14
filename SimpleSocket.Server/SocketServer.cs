@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using SimpleSocket.Common;
 
 namespace SimpleSocket.Server
 {
@@ -29,11 +30,18 @@ namespace SimpleSocket.Server
         private readonly ConcurrentDictionary<string, SocketSession> _sessions =
             new ConcurrentDictionary<string, SocketSession>();
 
+        private readonly IMessageFilterFactory messageFilterFactory = null; 
+        
         public bool running { get; private set; } = false;
 
         public Action<SocketSessionConfigurator> onNewSocketSessionConnected { get; set; } = null;
         public Action<Exception, string> onError { get; set; } = null;
 
+        public SocketServer(IMessageFilterFactory messageFilterFactory)
+        {
+            this.messageFilterFactory = messageFilterFactory;
+        }
+        
         //
         private void StartAllListener()
         {
@@ -144,13 +152,19 @@ namespace SimpleSocket.Server
                 {
                     throw new Exception("Session Id generation failed");
                 }
-
+                
+                var newMsgFilterFactory = messageFilterFactory.Create();
+                if (newMsgFilterFactory == null)
+                {
+                    throw new Exception("Message file factory 에서 null을 반환했습니다.");
+                }
+                
                 var newSession = CreateSession(newSessionId);
                 _sessions[newSessionId] = newSession;
 
                 onNewSocketSessionConnected?.Invoke(new SocketSessionConfigurator(newSession));
-                
-                newSession.Start(newSessionId, sck, OnSessionClose);
+
+                newSession.Start(newSessionId, sck, OnSessionClose, newMsgFilterFactory);
                 newSession.OnStarted();
                 
                 return ValueTask.FromResult(true);
@@ -246,9 +260,9 @@ namespace SimpleSocket.Server
             {
                 throw new Exception("[SocketServer.RemoveListener] Listener that does not exist.");
             }
-            
+
             listenerPair.listener.Close();
-            
+
             return this;
         }
     }

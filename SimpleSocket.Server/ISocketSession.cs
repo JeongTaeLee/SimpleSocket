@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace SimpleSocket.Server
 {
@@ -9,5 +10,10 @@ namespace SimpleSocket.Server
         void Send(byte[] buffer);
         void Send(ArraySegment<byte> segment);
         void Send(byte[] buffer, int offset, int length);
+
+        Task SendAsync(byte[] buffer);
+        Task SendAsync(ArraySegment<byte> segment);
+        Task SendAsync(byte[] buffer, int offset, int length);
+
     }
 }

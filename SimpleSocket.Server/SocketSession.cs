@@ -1,6 +1,8 @@
 using System;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
+using SimpleSocket.Common;
 
 namespace SimpleSocket.Server
 {
@@ -43,8 +45,9 @@ namespace SimpleSocket.Server
         public int state => _state;
 
         private Action<SocketSession> _onClose = null;
-
         private ISocketSessionEventHandler _socketSessionEventHandler = null;
+
+        protected IMessageFilter messageFilter { get; private set; } = null;
 
         public string id { get; private set; } = string.Empty;
         public Socket socket { get; private set; } = null;
@@ -57,12 +60,22 @@ namespace SimpleSocket.Server
         {
         }
 
-        protected virtual void OnError(Exception ex, string msg = "")
+        protected ValueTask OnReceive(object message)
+        {
+            if (_socketSessionEventHandler != null)
+            {
+                return _socketSessionEventHandler.OnReceived(this, message);
+            }
+
+            return new ValueTask();
+        }
+        
+        protected void OnError(Exception ex, string msg = "")
         {
             _socketSessionEventHandler?.OnError(this, ex, msg);
         }
 
-        public void Start(string sessionId, Socket sck, Action<SocketSession> onClose)
+        public void Start(string sessionId, Socket sck, Action<SocketSession> onClose, IMessageFilter messageFilter)
         {
             var oldState = Interlocked.CompareExchange(
                 ref _state
@@ -83,7 +96,8 @@ namespace SimpleSocket.Server
             
             socket = sck ?? throw new ArgumentNullException(nameof(sck));
             _onClose = onClose ?? throw new ArgumentNullException(nameof(onClose));
-
+            this.messageFilter = messageFilter ?? throw new ArgumentNullException(nameof(messageFilter));
+            
             try
             {
                 InternalOnStart();
@@ -184,6 +198,21 @@ namespace SimpleSocket.Server
             socket.Send(buffer, offset, length, SocketFlags.None);
         }
 
+        public virtual Task SendAsync(byte[] buffer)
+        {
+            return SendAsync(new ArraySegment<byte>(buffer, 0, buffer.Length));
+        }
+
+        public virtual Task SendAsync(byte[] buffer, int offset, int length)
+        {
+            return SendAsync(new ArraySegment<byte>(buffer, offset, length));
+        }
+
+        public virtual Task SendAsync(ArraySegment<byte> segment)
+        {
+            return socket.SendAsync(segment, SocketFlags.None);
+        }
+        
         public SocketSession SetSocketSessionEventHandler(ISocketSessionEventHandler socketSessionEventHandler)
         {
             _socketSessionEventHandler = socketSessionEventHandler ??

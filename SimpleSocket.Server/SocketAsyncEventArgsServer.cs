@@ -1,5 +1,6 @@
 using System;
 using System.Net.Sockets;
+using SimpleSocket.Common;
 using SimpleSocket.Server.Components;
 
 namespace SimpleSocket.Server
@@ -10,7 +11,8 @@ namespace SimpleSocket.Server
         
         private readonly BufferManager _recvBufferManager = null;
         
-        public SocketAsyncEventArgsServer(SocketAsyncEventArgsServerConfig socketAsyncEventArgsConfig)
+        public SocketAsyncEventArgsServer(SocketAsyncEventArgsServerConfig socketAsyncEventArgsConfig, IMessageFilterFactory msgFilterFactory)
+            : base(msgFilterFactory)
         {
             _socketAsyncEventArgsConfig = socketAsyncEventArgsConfig ?? throw new ArgumentNullException(nameof(socketAsyncEventArgsConfig));
 

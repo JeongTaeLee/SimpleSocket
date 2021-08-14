@@ -1,15 +1,22 @@
 using System;
+using System.Net.Http.Headers;
 using System.Net.Sockets;
 
 namespace SimpleSocket.Server
 {
     public class SocketAsyncEventArgsSession : SocketSession
     {
+        private readonly int _originOffset = 0;
+        private int _currentOffset = 0;
+        
         public readonly SocketAsyncEventArgs recvEventArgs = null;
+        
         
         public SocketAsyncEventArgsSession(SocketAsyncEventArgs recvEventArgs)
         {
             this.recvEventArgs = recvEventArgs ?? throw new ArgumentNullException(nameof(recvEventArgs));
+            _originOffset = this.recvEventArgs.Offset;
+            _currentOffset = _originOffset;
         }
 
         private void StartReceive(SocketAsyncEventArgs args)
@@ -21,22 +28,65 @@ namespace SimpleSocket.Server
             }
         }
         
-        private void ProcessReceive(SocketAsyncEventArgs args)
+        private async void ProcessReceive(SocketAsyncEventArgs args)
         {
             if (args.BytesTransferred > 0 && args.SocketError == SocketError.Success)
             {
+                var totalReadByte = 0;
+
                 try
                 {
                     // TODO @jeongtae.lee : receive 프로세스 구현
+
+                    while (args.BytesTransferred > totalReadByte)
+                    {
+                        var readSize = 0;
+
+                        try
+                        {
+                            var message =
+                                messageFilter.Filtering(args.Buffer, _currentOffset, args.Count, out readSize);
+
+                            if (message == null)
+                            {
+                                break;
+                            }
+
+                            await OnReceive(message);
+                        }
+                        finally
+                        {
+                            totalReadByte += readSize;
+                            _currentOffset += readSize;
+                        }
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    OnError(ex, "Session receive error!");
+
+                    if (SocketSessionState.RUNNING == state)
+                    {
+                        Close();
+                    }
                 }
                 finally
                 {
-                    StartReceive(args);    
+                    if (args.BytesTransferred <= totalReadByte)
+                    {
+                        _currentOffset = _originOffset;
+                    }
+
+                    if (SocketSessionState.RUNNING == state)
+                    {
+                        StartReceive(args);    
+                    }
                 }
             }
             else
             {
-                if (SocketSessionState.RUNNING == base.state)
+                if (SocketSessionState.RUNNING == state)
                 {
                     Close();
                 }
@@ -48,6 +98,11 @@ namespace SimpleSocket.Server
             base.InternalOnStart();
             
             StartReceive(recvEventArgs);
+        }
+
+        protected override void InternalOnClose()
+        {
+            _currentOffset = _originOffset;
         }
     }
 }
