@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\SimpleSocket.Client\SimpleSocket.Client.csproj" />
     <ProjectReference Include="..\SimpleSocket.Common\SimpleSocket.Common.csproj" />
     <ProjectReference Include="..\SimpleSocket.Server\SimpleSocket.Server.csproj" />
   </ItemGroup>

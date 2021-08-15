@@ -30,7 +30,7 @@ namespace SimpleSocket.Server
         private readonly ConcurrentDictionary<string, SocketSession> _sessions =
             new ConcurrentDictionary<string, SocketSession>();
 
-        private readonly IMessageFilterFactory messageFilterFactory = null; 
+        private readonly IMessageFilterFactory _messageFilterFactory = null; 
         
         public bool running { get; private set; } = false;
 
@@ -39,7 +39,7 @@ namespace SimpleSocket.Server
 
         public SocketServer(IMessageFilterFactory messageFilterFactory)
         {
-            this.messageFilterFactory = messageFilterFactory;
+            this._messageFilterFactory = messageFilterFactory;
         }
         
         //
@@ -153,7 +153,7 @@ namespace SimpleSocket.Server
                     throw new Exception("Session Id generation failed");
                 }
                 
-                var newMsgFilterFactory = messageFilterFactory.Create();
+                var newMsgFilterFactory = _messageFilterFactory.Create();
                 if (newMsgFilterFactory == null)
                 {
                     throw new Exception("Message file factory 에서 null을 반환했습니다.");

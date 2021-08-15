@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleSocket.Test", "Simple
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleSocket.Common", "SimpleSocket.Common\SimpleSocket.Common.csproj", "{954F4A5E-D219-4B3E-8F5E-80131D9F8A7C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleSocket.Client", "SimpleSocket.Client\SimpleSocket.Client.csproj", "{10784227-FA30-42B1-B4B8-7C14555940CB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{954F4A5E-D219-4B3E-8F5E-80131D9F8A7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{954F4A5E-D219-4B3E-8F5E-80131D9F8A7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{954F4A5E-D219-4B3E-8F5E-80131D9F8A7C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10784227-FA30-42B1-B4B8-7C14555940CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10784227-FA30-42B1-B4B8-7C14555940CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10784227-FA30-42B1-B4B8-7C14555940CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10784227-FA30-42B1-B4B8-7C14555940CB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
