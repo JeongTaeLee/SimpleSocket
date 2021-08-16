@@ -8,7 +8,7 @@ namespace SimpleSocket.Test
 {
     [TestFixture]
     public class SocketAsyncEventArgsServerTest
-    {        
+    {
         private class TestFilter : PrefixBodySizeMessageFilter
         {
             public TestFilter()
@@ -26,29 +26,29 @@ namespace SimpleSocket.Test
                 return Encoding.UTF8.GetString(buffer, offset, length);
             }
         }
-        
+
         [SetUp]
         public void SetUp()
         {
         }
 
-        [Test] 
+        [Test]
         public void MainTest()
         {
-            var server = new SocketAsyncEventArgsServer(new SocketAsyncEventArgsServerConfig()
-            {
-                maxConnection = 1000,
-                recvBufferSize = 1024,
-                sendBufferSize = 1024,
-            }, new GenericMessageFilterFactory<TestFilter>());
-            
+            var server = new SocketAsyncEventArgsServer(
+                new SocketAsyncEventArgsServerConfig.Builder()
+                    .SetRecvBufferSize(1024)
+                    .SetSendBufferSize(1024)
+                    .SetMaxConnection(1000)
+                    .Build()
+                , new GenericMessageFilterFactory<TestFilter>());
+
             server.Start();
             Assert.AreEqual(server.running, true);
-            
-            
+
+
             server.Close();
             Assert.AreEqual(server.running, false);
         }
-        
     }
 }

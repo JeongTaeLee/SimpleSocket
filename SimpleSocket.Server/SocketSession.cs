@@ -18,7 +18,7 @@ namespace SimpleSocket.Server
     }
 
     // 값 바꾸지 말 것!
-    public class SocketSessionState
+    public static class SocketSessionState
     {
         public const int IDLE = 1; // 초기 상태.
 

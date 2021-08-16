@@ -1,34 +1,43 @@
 using System;
 using System.Net.Sockets;
-using System.Resources;
 
-namespace SimpleSocket.Server
+namespace SimpleSocket.Client
 {
-    public class SocketListenerConfig
-    {
+    public class SocketClientConfig
+    {        
         public readonly SocketType socketType;
         public readonly ProtocolType protocolType;
         public readonly string ip;
         public readonly int port;
 
-        private SocketListenerConfig(SocketType socketType, ProtocolType protocolType, string ip, int port)
-        {                
+        private SocketClientConfig( SocketType socketType, ProtocolType protocolType, string ip, int port)
+        {
+            if (SocketType.Unknown == socketType)
+            {
+                throw new ArgumentException($"Invalid {nameof(socketType)} - socket Type({socketType})");
+            }
+            
+            if (ProtocolType.Unknown == protocolType)
+            {
+                throw new ArgumentException($"Invalid {nameof(protocolType)} - protocol Type({protocolType})");
+            }
+            
             if (string.IsNullOrEmpty(ip))
             {
-                throw new ArgumentException($"{nameof(ip)} is null or empty");
+                throw new ArgumentException($"Invalid {nameof(ip)} - ip({ip})");
             }
 
             if (0 > port)
             {
                 throw new ArgumentException($"Invalid {nameof(port)} - port({port})");
             }
-            
+
             this.socketType = socketType;
             this.protocolType = protocolType;
             this.ip = ip;
             this.port = port;
         }
-        
+
         public class Builder
         {
             public SocketType socketType { get; private set; } = SocketType.Stream;
@@ -40,9 +49,9 @@ namespace SimpleSocket.Server
             {
                 if (string.IsNullOrEmpty(ip))
                 {
-                    throw new ArgumentException($"{nameof(ip)} is null or empty");
-                }
-
+                    throw new ArgumentException($"Invalid {nameof(ip)} - ip({ip})");
+                }              
+                
                 if (0 > port)
                 {
                     throw new ArgumentException($"Invalid {nameof(port)} - port({port})");
@@ -52,8 +61,8 @@ namespace SimpleSocket.Server
                 this.port = port;
             }
             
-            public SocketListenerConfig Build()
-                =>  new SocketListenerConfig(socketType, protocolType, ip, port);
+            public SocketClientConfig Build() 
+                => new SocketClientConfig(socketType, protocolType, ip, port);
             
             public Builder SetSocketType(SocketType socketType)
             {
@@ -80,14 +89,14 @@ namespace SimpleSocket.Server
             }
             
             public Builder SetIp(string ip)
-            {                
+            {
                 if (string.IsNullOrEmpty(ip))
                 {
-                    throw new ArgumentException($"{nameof(ip)} is null or empty");
+                    throw new ArgumentException($"Invalid {nameof(ip)} - ip({ip})");
                 }
 
                 this.ip = ip;
-
+                
                 return this;
             }
 

@@ -36,8 +36,6 @@ namespace SimpleSocket.Server
 
                 try
                 {
-                    // TODO @jeongtae.lee : receive 프로세스 구현
-
                     while (args.BytesTransferred > totalReadByte)
                     {
                         var readSize = 0;
