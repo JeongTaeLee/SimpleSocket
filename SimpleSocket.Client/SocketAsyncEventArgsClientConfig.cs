@@ -33,24 +33,28 @@ namespace SimpleSocket.Client
                 return new SocketAsyncEventArgsClientConfig(recvBufferSize, sendBufferSize);
             }
             
-            public void SetRecvBufferSize(int recvBufferSize)
+            public Builder SetRecvBufferSize(int recvBufferSize)
             {
-                if (0 > recvBufferSize)
+                if (0 >= recvBufferSize)
                 {
                     throw new ArgumentException($"Invalid {nameof(recvBufferSize)} - recv buffer size({recvBufferSize})");
                 }
 
                 this.recvBufferSize = recvBufferSize;
+
+                return this;
             }
 
-            public void SetSendBufferSize(int sendBufferSize)
+            public Builder SetSendBufferSize(int sendBufferSize)
             {
-                if (0 > sendBufferSize)
+                if (0 >= sendBufferSize)
                 {
                     throw new ArgumentException($"Invalid {nameof(sendBufferSize)} - recv buffer size({sendBufferSize})");
                 }
 
                 this.sendBufferSize = sendBufferSize;
+
+                return this;
             }
         }
     }

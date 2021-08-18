@@ -7,7 +7,7 @@ namespace SimpleSocket.Client
 {
     public class SocketAsyncEventArgsClient : SocketClient
     {
-        private readonly int _originOffset = 0;
+        private int _originOffset = 0;
         private int _currentOffset = 0;
         
         private SocketAsyncEventArgs _recvArgs = null; 
@@ -29,7 +29,7 @@ namespace SimpleSocket.Client
             }
         }
         
-        private async void ProcessReceive(SocketAsyncEventArgs args)
+        private void ProcessReceive(SocketAsyncEventArgs args)
         {
             if (args.BytesTransferred > 0 && args.SocketError == SocketError.Success)
             {
@@ -100,6 +100,9 @@ namespace SimpleSocket.Client
             _recvArgs.SetBuffer(new byte[socketAsyncEventArgsClientConfig.recvBufferSize]
                 , 0
                 , socketAsyncEventArgsClientConfig.recvBufferSize);
+
+            _originOffset = _recvArgs.Offset;
+            _currentOffset = _originOffset;
             
             StartReceive(_recvArgs);
         }

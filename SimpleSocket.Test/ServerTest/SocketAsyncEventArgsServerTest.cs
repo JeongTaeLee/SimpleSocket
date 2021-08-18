@@ -4,7 +4,7 @@ using NUnit.Framework;
 using SimpleSocket.Common;
 using SimpleSocket.Server;
 
-namespace SimpleSocket.Test
+namespace SimpleSocket.Test.ServerTest
 {
     [TestFixture]
     public class SocketAsyncEventArgsServerTest
