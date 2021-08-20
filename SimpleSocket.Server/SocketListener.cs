@@ -14,16 +14,16 @@ namespace SimpleSocket.Server
         public bool running { get; private set; } = false;
 
         public Action<Exception, string> onError { get; set; }
-        public Func<Socket, ValueTask<bool>> onAccept { get; set; }
+        public Func<Socket, bool> onAccept { get; set; }
         
         public SocketListener(SocketListenerConfig listenerConfig)
         {
             this.listenerConfig = listenerConfig ?? throw new ArgumentNullException(nameof(listenerConfig));
         }
 
-        protected virtual async Task<bool> OnAccept(Socket sck)
+        protected bool OnAccept(Socket sck)
         {
-            var result = await onAccept.Invoke(sck);
+            var result = onAccept.Invoke(sck);
             if (!result)
             {
                 sck.SafeClose();

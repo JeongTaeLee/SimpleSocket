@@ -12,27 +12,22 @@ namespace SimpleSocket.Test.ServerTest
         {
             var builder = new SocketAsyncEventArgsServerConfig.Builder();
 
-            try
+            
+            TestUtil.Assert_Exception(() =>
             {
                 builder.SetMaxConnection(0);
-                Assert.Fail();
-            }
-            catch { }
-
-            try
+            });
+            
+            TestUtil.Assert_Exception(() =>
             {
                 builder.SetRecvBufferSize(0);
-                Assert.Fail();
-            }
-            catch { }
-
-            try
+            });
+            
+            TestUtil.Assert_Exception(() =>
             {
                 builder.SetSendBufferSize(0);
-                Assert.Fail();
-            }
-            catch { }
-
+            });
+            
             var maxConnection = 9999;
             var recvBufferSize = 8888;
             var sendBufferSize = 7777;

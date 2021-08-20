@@ -11,21 +11,16 @@ namespace SimpleSocket.Test.ClientTest
         {
             var builder = new SocketAsyncEventArgsClientConfig.Builder();
 
-
-            try
+            TestUtil.Assert_Exception(() =>
             {
                 builder.SetRecvBufferSize(0);
-                Assert.Fail();
-            }
-            catch { }
-
-            try
+            });
+            
+            TestUtil.Assert_Exception(() =>
             {
                 builder.SetSendBufferSize(0);
-                Assert.Fail();
-            }
-            catch { }
-            
+            });
+          
             const int recvBufferSize = 8888;
             const int sendBufferSize = 7777;
 

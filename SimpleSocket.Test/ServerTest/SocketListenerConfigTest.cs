@@ -13,42 +13,32 @@ namespace SimpleSocket.Test.ServerTest
         {
             SocketListenerConfig.Builder builder = null;
 
-            try
+            TestUtil.Assert_Exception(() =>
             {
                 builder = new SocketListenerConfig.Builder("0.0.0.0", -1);
-                Assert.Fail();
-            }
-            catch { }
+            });
 
-            try
+            TestUtil.Assert_Exception(() =>
             {
                 builder = new SocketListenerConfig.Builder(string.Empty, 1);
-                Assert.Fail();
-            }
-            catch { }
-
+            });
+            
             builder = new SocketListenerConfig.Builder("0.0.0.0", 1);
 
-            try
+            TestUtil.Assert_Exception(() =>
             {
                 builder.SetProtocolType(ProtocolType.Unknown);
-                Assert.Fail();
-            }
-            catch { }
-
-            try
+            });
+            
+            TestUtil.Assert_Exception(() =>
             {
                 builder.SetSocketType(SocketType.Unknown);
-                Assert.Fail();
-            }
-            catch  { }
-
-            try
+            });
+            
+            TestUtil.Assert_Exception(() =>
             {
                 builder.SetBacklog(0);
-                Assert.Fail();
-            }
-            catch { }
+            });
             
             const string ip = "127.0.0.1";
             const int port = 1919;

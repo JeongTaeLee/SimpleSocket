@@ -142,7 +142,7 @@ namespace SimpleSocket.Server
         }
 
         // 
-        protected virtual ValueTask<bool> OnAccept(Socket sck)
+        protected bool OnAccept(Socket sck)
         {
             var newSessionId = GenAndBookingSessionId();
 
@@ -167,7 +167,7 @@ namespace SimpleSocket.Server
                 newSession.Start(newSessionId, sck, OnSessionClose, newMsgFilterFactory);
                 newSession.OnStarted();
                 
-                return ValueTask.FromResult(true);
+                return true;
             }
             catch (Exception ex)
             {
@@ -175,7 +175,7 @@ namespace SimpleSocket.Server
 
                 _sessions.TryRemove(newSessionId, out var _);
 
-                return ValueTask.FromResult(false);
+                return false;
             }
         }
 

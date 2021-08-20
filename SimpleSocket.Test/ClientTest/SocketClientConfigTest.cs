@@ -12,36 +12,28 @@ namespace SimpleSocket.Test.ClientTest
         {
             SocketClientConfig.Builder builder = null;
 
-            try
+            TestUtil.Assert_Exception(() =>
             {
                 builder = new SocketClientConfig.Builder("0.0.0.0", -1);
-                Assert.Fail();
-            }
-            catch { }
-
-            try
+            });
+            
+            TestUtil.Assert_Exception(() =>
             {
                 builder = new SocketClientConfig.Builder(string.Empty, 1);
-                Assert.Fail();
-            }
-            catch { }
+            });
             
             builder = new SocketClientConfig.Builder("0.0.0.0", 1);
 
-            try
+            TestUtil.Assert_Exception(() =>
             {
                 builder.SetProtocolType(ProtocolType.Unknown);
-                Assert.Fail();
-            }
-            catch { }
-
-            try
+            });
+            
+            TestUtil.Assert_Exception(() =>
             {
                 builder.SetSocketType(SocketType.Unknown);
-                Assert.Fail();
-            }
-            catch  { }
-
+            });
+             
             const string ip = "127.0.0.1";
             const int port = 1919;
             const ProtocolType protocolType = ProtocolType.Udp;

@@ -13,7 +13,7 @@ namespace SimpleSocket.Server
         {
         }
 
-        private async void ProcessAccept(SocketAsyncEventArgs e)
+        private void ProcessAccept(SocketAsyncEventArgs e)
         {
             Socket acceptSocket = null;
 
@@ -57,7 +57,7 @@ namespace SimpleSocket.Server
 
             if (acceptSocket != null)
             {
-                await OnAccept(e.AcceptSocket);
+                OnAccept(e.AcceptSocket);
             }
 
             if (!willRaiseEvent)
