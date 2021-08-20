@@ -46,7 +46,7 @@ namespace SimpleSocket.Client
     
     public abstract class SocketClient
     {
-        private int _state = 0;
+        private int _state = SocketClientState.IDLE;
         public int state => _state;
         
         protected readonly IMessageFilter messageFilter = null;

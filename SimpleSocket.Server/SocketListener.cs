@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
@@ -51,9 +52,11 @@ namespace SimpleSocket.Server
                 }
                 
                 socket = new Socket(listenerConfig.socketType, listenerConfig.protocolType);
+                socket.Bind(new IPEndPoint(IPAddress.Parse(listenerConfig.ip), listenerConfig.port));
+                socket.Listen(listenerConfig.backlog);
                 
                 OnStart();
-
+                
                 running = true;
             }
             catch

@@ -43,13 +43,22 @@ namespace SimpleSocket.Test.ServerTest
             }
             catch  { }
 
+            try
+            {
+                builder.SetBacklog(0);
+                Assert.Fail();
+            }
+            catch { }
+            
             const string ip = "127.0.0.1";
             const int port = 1919;
-            const ProtocolType protocolType = ProtocolType.Udp;
+            const int backlog = 999;
             const SocketType socketType = SocketType.Dgram;
+            const ProtocolType protocolType = ProtocolType.Udp;
 
             builder.SetIp(ip)
                 .SetPort(port)
+                .SetBacklog(backlog)
                 .SetProtocolType(protocolType)
                 .SetSocketType(socketType);
 
@@ -57,6 +66,7 @@ namespace SimpleSocket.Test.ServerTest
             Assert.NotNull(config);
             Assert.AreEqual(config.ip, ip);
             Assert.AreEqual(config.port, port);
+            Assert.AreEqual(config.backlog, backlog);
             Assert.AreEqual(config.protocolType, protocolType);
             Assert.AreEqual(config.socketType, socketType);
         }

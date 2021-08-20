@@ -13,38 +13,56 @@ namespace SimpleSocket.Server
         {
         }
 
-        private void StartAccept()
+        private async void ProcessAccept(SocketAsyncEventArgs e)
         {
-            _acceptArgs.AcceptSocket = null;
+            Socket acceptSocket = null;
 
+            if (e.SocketError != SocketError.Success)
+            {
+                var errorCode = (int) e.SocketError;
+                
+                //리스너 소켓이 닫혔을 경우 나오는 에러코드.
+                if (errorCode == 995 || errorCode == 10004 || errorCode == 10038)
+                {
+                    return;
+                }
+                
+                OnError(new SocketException(errorCode));
+            }
+            else
+            {
+                acceptSocket = e.AcceptSocket;
+            }
+
+            e.AcceptSocket = null;
+            
+            var willRaiseEvent = false;
             try
             {
-                var willRaiseEvent = socket.AcceptAsync(_acceptArgs);
-                if (!willRaiseEvent)
-                {
-                    ProcessAccept(_acceptArgs);
-                }
+                willRaiseEvent = socket.AcceptAsync(_acceptArgs);
+            }
+            catch (ObjectDisposedException ex)
+            {
+                willRaiseEvent = true;
+            }
+            catch (NullReferenceException ex)
+            {
+                willRaiseEvent = true;
             }
             catch (Exception ex)
             {
+                willRaiseEvent = true;
                 OnError(ex);
             }
-            
-        }
-        
-        private async void ProcessAccept(SocketAsyncEventArgs e)
-        {
-            try
+
+            if (acceptSocket != null)
             {
                 await OnAccept(e.AcceptSocket);
             }
-            catch (Exception ex)
+
+            if (!willRaiseEvent)
             {
-                OnError(ex);
-            }
-            finally
-            {
-                StartAccept();
+                ProcessAccept(e);
             }
         }
 
@@ -59,6 +77,11 @@ namespace SimpleSocket.Server
             {
                 _acceptArgs = new SocketAsyncEventArgs();
                 _acceptArgs.Completed += OnAcceptCompleted;
+
+                if (!socket.AcceptAsync(_acceptArgs))
+                {
+                    ProcessAccept(_acceptArgs);
+                }
             }
             catch
             {

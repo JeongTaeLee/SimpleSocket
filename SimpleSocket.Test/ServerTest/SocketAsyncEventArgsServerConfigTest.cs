@@ -32,7 +32,7 @@ namespace SimpleSocket.Test.ServerTest
                 Assert.Fail();
             }
             catch { }
-            
+
             var maxConnection = 9999;
             var recvBufferSize = 8888;
             var sendBufferSize = 7777;
