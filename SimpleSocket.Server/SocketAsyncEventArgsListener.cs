@@ -57,7 +57,7 @@ namespace SimpleSocket.Server
 
             if (acceptSocket != null)
             {
-                OnAccept(e.AcceptSocket);
+                OnAccept(acceptSocket);
             }
 
             if (!willRaiseEvent)

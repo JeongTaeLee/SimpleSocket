@@ -40,7 +40,7 @@ namespace SimpleSocket.Test.ServerTest
         [Test]
         public async Task HandleTest()
         {
-            const int testConnectCount = 10;
+            const int testConnectCount = 500;
 
             var connectedCount = 0;
             var disconnectedCount = 0;
@@ -60,6 +60,11 @@ namespace SimpleSocket.Test.ServerTest
             };
             
             var server = CreateServer(sessionHandler);
+            server.onError += (ex, msg) =>
+            {
+                Assert.Fail();
+            };
+
             var serverIp = "0.0.0.0";
             var serverPort = TestUtil.GetFreePortNumber();
             server.AddListener(new SocketListenerConfig.Builder("0.0.0.0", serverPort).Build());
@@ -70,16 +75,16 @@ namespace SimpleSocket.Test.ServerTest
                 {
                     for (int idx = 0; idx < testConnectCount; ++idx)
                     {
-                        var client = CreateClient(serverIp, serverPort);
-                        
-                        
-                        
-                        using (var clientLauncher = client.ToClientLauncher()) ;
+                        var client = CreateClient("127.0.0.1", serverPort);
+                      
+                        using (var clientLauncher = client.ToClientLauncher())
+                        {
+                        }
                     }
                 }
 
-                await Task.Delay(1000);
-                
+                await Task.Delay(10000);
+
                 Assert.AreEqual(testConnectCount, connectedCount);
                 Assert.AreEqual(testConnectCount, disconnectedCount);
 

@@ -17,8 +17,8 @@ namespace SimpleSocket.Server
             _socketAsyncEventArgsConfig = socketAsyncEventArgsConfig ?? throw new ArgumentNullException(nameof(socketAsyncEventArgsConfig));
 
             _recvBufferManager = new BufferManager(
-                _socketAsyncEventArgsConfig.recvBufferSize,
-                _socketAsyncEventArgsConfig.maxConnection);
+                _socketAsyncEventArgsConfig.recvBufferSize * _socketAsyncEventArgsConfig.maxConnection,
+                _socketAsyncEventArgsConfig.recvBufferSize);
         }
 
         protected override void InternalOnStart()

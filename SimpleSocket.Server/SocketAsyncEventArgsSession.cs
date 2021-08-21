@@ -8,9 +8,8 @@ namespace SimpleSocket.Server
     {
         private readonly int _originOffset = 0;
         private int _currentOffset = 0;
-        
+
         public readonly SocketAsyncEventArgs recvEventArgs = null;
-        
         
         public SocketAsyncEventArgsSession(SocketAsyncEventArgs recvEventArgs)
         {
@@ -19,9 +18,14 @@ namespace SimpleSocket.Server
             _currentOffset = _originOffset;
         }
 
+        private void RecvEventArgs_Completed(object sender, SocketAsyncEventArgs e)
+        {
+            ProcessReceive(e);
+        }
+
         private void StartReceive(SocketAsyncEventArgs args)
         {
-            var willRaiseEvent = socket.SendAsync(args);
+            var willRaiseEvent = socket.ReceiveAsync(args);
             if (!willRaiseEvent)
             {
                 ProcessReceive(args);
@@ -94,13 +98,17 @@ namespace SimpleSocket.Server
         protected override void InternalOnStart()
         {
             base.InternalOnStart();
-            
+
+            this.recvEventArgs.Completed += RecvEventArgs_Completed;
+
             StartReceive(recvEventArgs);
         }
 
         protected override void InternalOnClose()
         {
             _currentOffset = _originOffset;
+
+            recvEventArgs.Completed -= RecvEventArgs_Completed;
         }
     }
 }

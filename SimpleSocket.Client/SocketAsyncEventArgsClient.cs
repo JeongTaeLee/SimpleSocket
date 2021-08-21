@@ -20,15 +20,21 @@ namespace SimpleSocket.Client
         {
             this.socketAsyncEventArgsClientConfig = socketAsyncEventArgsClientConfig;
         }
+
         private void StartReceive(SocketAsyncEventArgs args)
         {
-            var willRaiseEvent = socket.SendAsync(args);
+            var willRaiseEvent = socket.ReceiveAsync(args);
             if (!willRaiseEvent)
             {
                 ProcessReceive(args);
             }
         }
         
+        private void RecvArgs_Completed(object sender, SocketAsyncEventArgs e)
+        {
+            ProcessReceive(e);
+        }
+
         private void ProcessReceive(SocketAsyncEventArgs args)
         {
             if (args.BytesTransferred > 0 && args.SocketError == SocketError.Success)
@@ -100,6 +106,7 @@ namespace SimpleSocket.Client
             _recvArgs.SetBuffer(new byte[socketAsyncEventArgsClientConfig.recvBufferSize]
                 , 0
                 , socketAsyncEventArgsClientConfig.recvBufferSize);
+            _recvArgs.Completed += RecvArgs_Completed;
 
             _originOffset = _recvArgs.Offset;
             _currentOffset = _originOffset;
@@ -110,9 +117,8 @@ namespace SimpleSocket.Client
         protected override void InternalOnClose()
         {
             base.InternalOnClose();
-            
-            _recvArgs.SetBuffer(null, 0, 0);
-            _recvArgs = null;
+
+            _recvArgs.Completed -= RecvArgs_Completed;
         }
 
         public override void Send(byte[] buffer)
