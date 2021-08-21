@@ -1,6 +1,9 @@
 using System;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Xml.Serialization;
 using NUnit.Framework;
 using SimpleSocket.Client;
 using SimpleSocket.Common;
@@ -34,6 +37,55 @@ namespace SimpleSocket.Test.ServerTest
         {
         }
 
+        [Test]
+        public async Task HandleTest()
+        {
+            const int testConnectCount = 10;
+
+            var connectedCount = 0;
+            var disconnectedCount = 0;
+            
+            var sessionHandler = new EventSocketSessionEventHandler();
+            sessionHandler.onSocketSessionStarted += (ssn) =>
+            {
+                Interlocked.Increment(ref connectedCount);
+            };
+            sessionHandler.onSocketSessionClosed += (ssn) =>
+            {
+                Interlocked.Increment(ref disconnectedCount);
+            };
+            sessionHandler.onError += (session, exception, arg3) =>
+            {
+                Assert.Fail();
+            };
+            
+            var server = CreateServer(sessionHandler);
+            var serverIp = "0.0.0.0";
+            var serverPort = TestUtil.GetFreePortNumber();
+            server.AddListener(new SocketListenerConfig.Builder("0.0.0.0", serverPort).Build());
+
+            using (var serverLauncher = server.ToServerLauncher())
+            {
+                // Connect
+                {
+                    for (int idx = 0; idx < testConnectCount; ++idx)
+                    {
+                        var client = CreateClient(serverIp, serverPort);
+                        
+                        
+                        
+                        using (var clientLauncher = client.ToClientLauncher()) ;
+                    }
+                }
+
+                await Task.Delay(1000);
+                
+                Assert.AreEqual(testConnectCount, connectedCount);
+                Assert.AreEqual(testConnectCount, disconnectedCount);
+
+            }
+        }
+        
         [Test]
         public void ListenerAddRemoveTest()
         {
@@ -85,6 +137,21 @@ namespace SimpleSocket.Test.ServerTest
             }
 
             return server;
+        }
+
+        public SocketAsyncEventArgsClient CreateClient(string ip, int port, ISocketClientEventHandler handler = null)
+        {
+            var client = new SocketAsyncEventArgsClient(
+                new SocketAsyncEventArgsClientConfig.Builder().Build()
+                , new SocketClientConfig.Builder(ip, port).Build()
+                , new TestFilter());
+
+            if (handler != null)
+            {
+                client.SetSocketClientEventHandler(handler);
+            }
+
+            return client;
         }
     }
 }
