@@ -65,7 +65,7 @@ namespace SimpleSocket.Test.ServerTest
                 Assert.Fail();
             };
 
-            var serverIp = "0.0.0.0";
+            // var serverIp = "0.0.0.0";
             var serverPort = TestUtil.GetFreePortNumber();
             server.AddListener(new SocketListenerConfig.Builder("0.0.0.0", serverPort).Build());
 

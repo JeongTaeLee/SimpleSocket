@@ -27,7 +27,10 @@ namespace SimpleSocket.Test
                 action?.Invoke();
                 Assert.Fail();
             }
-            catch (Exception e) { }
+            catch (Exception) 
+            { 
+
+            }
         }
         
         public static void Assert_Exception<TException>(Action action)
@@ -38,7 +41,9 @@ namespace SimpleSocket.Test
                 action?.Invoke();
                 Assert.Fail();
             }
-            catch (TException e) { }
+            catch (TException) 
+            { 
+            }
         }
 
         public static void Connect(string ip, int port)
@@ -84,7 +89,7 @@ namespace SimpleSocket.Test
 
                 return true;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return false;
             }

@@ -41,11 +41,11 @@ namespace SimpleSocket.Server
             {
                 willRaiseEvent = socket.AcceptAsync(_acceptArgs);
             }
-            catch (ObjectDisposedException ex)
+            catch (ObjectDisposedException)
             {
                 willRaiseEvent = true;
             }
-            catch (NullReferenceException ex)
+            catch (NullReferenceException)
             {
                 willRaiseEvent = true;
             }

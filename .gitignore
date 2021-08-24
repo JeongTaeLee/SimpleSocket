@@ -1,6 +1,7 @@
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudio,rider,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudio,rider,visualstudiocode
 
+/.DS_Store
 */.DS_Store
 
 ### Rider ###
@@ -482,3 +483,6 @@ FodyWeavers.xsd
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio,rider,visualstudiocode
+
+#custom
+!/workspace.code-workspace
