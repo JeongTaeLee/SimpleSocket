@@ -44,7 +44,7 @@ namespace SimpleSocket.Test.ServerTest
 
             var connectedCount = 0;
             var disconnectedCount = 0;
-            
+
             var sessionHandler = new EventSocketSessionEventHandler();
             sessionHandler.onSocketSessionStarted += (ssn) =>
             {
@@ -58,7 +58,7 @@ namespace SimpleSocket.Test.ServerTest
             {
                 Assert.Fail();
             };
-            
+
             var server = CreateServer(sessionHandler);
             server.onError += (ex, msg) =>
             {
@@ -76,21 +76,20 @@ namespace SimpleSocket.Test.ServerTest
                     for (int idx = 0; idx < testConnectCount; ++idx)
                     {
                         var client = CreateClient("127.0.0.1", serverPort);
-                      
+
                         using (var clientLauncher = client.ToClientLauncher())
                         {
                         }
                     }
                 }
-
-                await Task.Delay(10000);
-
-                Assert.AreEqual(testConnectCount, connectedCount);
-                Assert.AreEqual(testConnectCount, disconnectedCount);
-
             }
+
+            await Task.Delay(10000);
+
+            Assert.AreEqual(testConnectCount, connectedCount);
+            Assert.AreEqual(testConnectCount, disconnectedCount);
         }
-        
+
         [Test]
         public void ListenerAddRemoveTest()
         {
@@ -98,13 +97,13 @@ namespace SimpleSocket.Test.ServerTest
 
             var listenerIp = "0.0.0.0";
             var localIp = "127.0.0.1";
-            
+
             var beforeServerStartPort = TestUtil.GetFreePortNumber();
             server.AddListener(new SocketListenerConfig.Builder(listenerIp, beforeServerStartPort).Build());
-            
+
             // 서버 시작 전 추가된 리스너 포트에 연결 시도.
             Assert.IsFalse(TestUtil.TryConnect(localIp, beforeServerStartPort));
-            
+
             server.Start();
 
             // 서버 시작 후 시작 전 추가되었던 리스너 포트로 연결 시도.
@@ -112,17 +111,17 @@ namespace SimpleSocket.Test.ServerTest
 
             var afterServerStartPort = TestUtil.GetFreePortNumber();
             server.AddListener(new SocketListenerConfig.Builder(listenerIp, afterServerStartPort).Build());
-            
+
             // 시작 후 추가한 리스너 포트로 연결.
             Assert.IsTrue(TestUtil.TryConnect(localIp, afterServerStartPort));
-            
+
             server.RemoveListener(listenerIp, beforeServerStartPort);
-            
+
             // 리스너 종료 후 연결.
             Assert.IsFalse(TestUtil.TryConnect(localIp, beforeServerStartPort));
-            
+
             server.Close();
-            
+
             // 서버 종료 후 연결.
             Assert.IsFalse(TestUtil.TryConnect(localIp, afterServerStartPort));
         }

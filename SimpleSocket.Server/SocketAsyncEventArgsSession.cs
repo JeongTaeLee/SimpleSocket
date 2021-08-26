@@ -67,11 +67,8 @@ namespace SimpleSocket.Server
                 catch (Exception ex)
                 {
                     OnError(ex, "Session receive error!");
-
-                    if (SocketSessionState.RUNNING == state)
-                    {
-                        Close();
-                    }
+                    
+                    Close();
                 }
                 finally
                 {

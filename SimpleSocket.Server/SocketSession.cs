@@ -69,7 +69,7 @@ namespace SimpleSocket.Server
 
             return new ValueTask();
         }
-        
+
         protected void OnError(Exception ex, string msg = "")
         {
             _socketSessionEventHandler?.OnError(this, ex, msg);
@@ -81,7 +81,7 @@ namespace SimpleSocket.Server
                 ref _state
                 , SocketSessionState.STARTING
                 , SocketSessionState.IDLE);
-            
+
             if (SocketSessionState.IDLE != oldState)
             {
                 throw new InvalidSocketSessionStateInMethodException(
@@ -90,14 +90,14 @@ namespace SimpleSocket.Server
                     , nameof(Start));
             }
 
-            id = string.IsNullOrEmpty(sessionId) 
-                ? throw new ArgumentException(null, nameof(sessionId)) 
+            id = string.IsNullOrEmpty(sessionId)
+                ? throw new ArgumentException(null, nameof(sessionId))
                 : sessionId;
-            
+
             socket = sck ?? throw new ArgumentNullException(nameof(sck));
             _onClose = onClose ?? throw new ArgumentNullException(nameof(onClose));
             this.messageFilter = messageFilter ?? throw new ArgumentNullException(nameof(messageFilter));
-            
+
             try
             {
                 InternalOnStart();
@@ -111,20 +111,16 @@ namespace SimpleSocket.Server
 
         public void Close()
         {
-            var oldState = Interlocked.CompareExchange(
-                ref _state
-                , SocketSessionState.TERMINATING
-                , SocketSessionState.RUNNING);
-            
-            if (SocketSessionState.RUNNING != oldState)
+            // 종료 중이거나 종료이면 캔슬
+            if (_state == SocketSessionState.TERMINATING || _state == SocketSessionState.TERMINATED)
             {
-                throw new InvalidSocketSessionStateInMethodException(
-                    oldState
-                    , SocketSessionState.RUNNING
-                    , nameof(Close));
+                return;
             }
 
+            Interlocked.Exchange(ref _state, SocketSessionState.TERMINATING);
+
             InternalOnClose();
+
             _onClose.Invoke(this);
         }
 
@@ -132,8 +128,13 @@ namespace SimpleSocket.Server
         {
             try
             {
-                Interlocked.Exchange(ref _state, SocketSessionState.RUNNING);
-                
+                // NOTE @jeongtae.lee : 시작 상태 중 종료 처리로 들어갈 수 있기 때문에 상태를 체크.
+                var oldState = Interlocked.CompareExchange(ref _state, SocketSessionState.RUNNING, SocketSessionState.STARTING);
+                if (SocketSessionState.STARTING != oldState)
+                {
+                    return;
+                }
+
                 _socketSessionEventHandler?.OnSocketSessionStarted(this);
             }
             catch (Exception ex)
@@ -146,10 +147,14 @@ namespace SimpleSocket.Server
         {
             try
             {
-                Interlocked.Exchange(ref _state, SocketSessionState.TERMINATED);
-                
+                var oldState = Interlocked.CompareExchange(ref _state, SocketSessionState.TERMINATED, SocketSessionState.TERMINATING);
+                if (SocketSessionState.TERMINATING != oldState)
+                {
+                    return;
+                }
+
                 _socketSessionEventHandler?.OnSocketSessionClosed(this);
-                
+
                 id = string.Empty;
                 socket = null;
             }
@@ -161,27 +166,11 @@ namespace SimpleSocket.Server
 
         public void Send(byte[] buffer)
         {
-            if (SocketSessionState.RUNNING != _state)
-            {
-                throw new InvalidSocketSessionStateInMethodException(
-                    _state
-                    , SocketSessionState.RUNNING
-                    , nameof(Send));
-            }
-
             Send(buffer, 0, buffer.Length);
         }
 
         public void Send(ArraySegment<byte> segment)
         {
-            if (SocketSessionState.RUNNING != _state)
-            {
-                throw new InvalidSocketSessionStateInMethodException(
-                    _state
-                    , SocketSessionState.RUNNING
-                    , nameof(Send));
-            }
-
             Send(segment.Array, segment.Offset, segment.Count);
         }
 
@@ -204,15 +193,23 @@ namespace SimpleSocket.Server
         }
 
         public virtual Task SendAsync(byte[] buffer, int offset, int length)
-        {
+        {            
             return SendAsync(new ArraySegment<byte>(buffer, offset, length));
         }
 
         public virtual Task SendAsync(ArraySegment<byte> segment)
         {
+            if (SocketSessionState.RUNNING != _state)
+            {
+                throw new InvalidSocketSessionStateInMethodException(
+                    _state
+                    , SocketSessionState.RUNNING
+                    , nameof(Send));
+            }
+            
             return socket.SendAsync(segment, SocketFlags.None);
         }
-        
+
         public SocketSession SetSocketSessionEventHandler(ISocketSessionEventHandler socketSessionEventHandler)
         {
             _socketSessionEventHandler = socketSessionEventHandler ??
