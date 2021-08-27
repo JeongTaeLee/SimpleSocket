@@ -30,8 +30,8 @@ namespace SimpleSocket.Server
         private readonly ConcurrentDictionary<string, SocketSession> _sessions =
             new ConcurrentDictionary<string, SocketSession>();
 
-        private readonly IMessageFilterFactory _messageFilterFactory = null; 
-        
+        private readonly IMessageFilterFactory _messageFilterFactory = null;
+
         public bool running { get; private set; } = false;
 
         public Action<SocketSessionConfigurator> onNewSocketSessionConnected { get; set; } = null;
@@ -41,7 +41,7 @@ namespace SimpleSocket.Server
         {
             this._messageFilterFactory = messageFilterFactory;
         }
-        
+
         //
         private void StartAllListener()
         {
@@ -73,7 +73,7 @@ namespace SimpleSocket.Server
                     {
                         continue;
                     }
-                    
+
                     listener.Close();
                 }
                 catch (Exception ex)
@@ -97,31 +97,11 @@ namespace SimpleSocket.Server
             }
 
             _listenerPairs[(config.ip, config.port)].SetListener(listener);
-            
+
             listener.Start(config, OnAcceptFromListener, OnErrorFromListener);
 
         }
 
-        private void SessionClosed(SocketSession closeSocketSession)
-        {
-            try
-            {
-                if (!_sessions.TryRemove(closeSocketSession.id, out var session))
-                {
-                    return;
-                }
-
-                InternalSessionClosed(closeSocketSession);
-
-                closeSocketSession.socket.Close();
-                closeSocketSession.OnClosed();
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-                throw;
-            }
-        }
         private string GenAndBookingSessionId()
         {
             var id = string.Empty;
@@ -134,6 +114,27 @@ namespace SimpleSocket.Server
             return id;
         }
 
+        private void OnSessionClosed(SocketSession closeSocketSession)
+        {
+            try
+            {
+                if (!_sessions.TryRemove(closeSocketSession.id, out var session))
+                {
+                    return;
+                }
+
+                InternalOnSessionClosed(closeSocketSession);
+
+                closeSocketSession.socket.Close();
+                closeSocketSession.OnClosed();
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+                throw;
+            }
+        }
+
         protected bool OnAcceptFromListener(SocketListener listener, Socket socket)
         {
             string newSessionId = null;
@@ -143,13 +144,13 @@ namespace SimpleSocket.Server
                 newSessionId = GenAndBookingSessionId();
                 if (string.IsNullOrEmpty(newSessionId))
                 {
-                    throw new Exception("Session Id generation failed");
+                    throw new Exception("Session Id generation failed.");
                 }
 
                 var newMsgFilterFactory = _messageFilterFactory.Create();
                 if (newMsgFilterFactory == null)
                 {
-                    throw new Exception("Message file factory 에서 null을 반환했습니다.");
+                    throw new Exception("Message file factory returned null.");
                 }
 
                 var newSession = CreateSession(newSessionId);
@@ -157,7 +158,7 @@ namespace SimpleSocket.Server
 
                 onNewSocketSessionConnected?.Invoke(new SocketSessionConfigurator(newSession));
 
-                newSession.Start(newSessionId, socket, newMsgFilterFactory, SessionClosed);
+                newSession.Start(newSessionId, socket, newMsgFilterFactory, OnSessionClosed);
                 newSession.OnStarted();
 
                 return true;
@@ -179,18 +180,18 @@ namespace SimpleSocket.Server
         }
 
         protected void OnError(Exception ex, string message = "")
-        {   
+        {
             onError?.Invoke(ex, message);
         }
 
-        protected virtual void InternalSessionClosed(SocketSession closeSocketSession)  { }
+        protected virtual void InternalOnSessionClosed(SocketSession closeSocketSession) { }
 
         protected virtual void InternalOnStart() { }
-        
+
         protected virtual void InternalOnClose() { }
-        
+
         protected abstract SocketListener CreateListener();
-        
+
         protected abstract SocketSession CreateSession(string sessionId);
 
         //
@@ -201,7 +202,7 @@ namespace SimpleSocket.Server
                 StartAllListener();
 
                 InternalOnStart();
-                
+
                 running = true;
             }
             catch
@@ -214,9 +215,9 @@ namespace SimpleSocket.Server
         public void Close()
         {
             running = false;
-            
+
             InternalOnClose();
-            
+
             StopAllListener();
         }
 
@@ -226,7 +227,7 @@ namespace SimpleSocket.Server
             {
                 throw new ArgumentNullException(nameof(config));
             }
-            
+
             if (string.IsNullOrEmpty(config.ip))
             {
                 throw new ArgumentException($"Invalid {nameof(config)}.{nameof(config.ip)} - ({config.ip})");
@@ -236,7 +237,7 @@ namespace SimpleSocket.Server
             {
                 throw new ArgumentException($"Invalid {nameof(config)}.{nameof(config.port)} - {config.port}");
             }
-            
+
             if (!_listenerPairs.TryAdd((config.ip, config.port), new ListenerPair(config)))
             {
                 throw new InvalidOperationException($"{config.ip}:{config.port} listener config already exists.");

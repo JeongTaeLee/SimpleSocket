@@ -43,7 +43,7 @@ namespace SimpleSocket.Server
             return new SocketAsyncEventArgsSession(recvEventArgs);
         }
 
-        protected override void InternalSessionClosed(SocketSession closeSocketSession)
+        protected override void InternalOnSessionClosed(SocketSession closeSocketSession)
         {
             if (closeSocketSession == null)
             {
@@ -54,7 +54,12 @@ namespace SimpleSocket.Server
             {
                 if (closeSocketSession is SocketAsyncEventArgsSession convertedSocketSession)
                 {
-                    _recvBufferManager.FreeBuffer(convertedSocketSession.recvEventArgs);
+                    var recvEventArgs = convertedSocketSession.recvEventArgs;
+
+                    _recvBufferManager.FreeBuffer(recvEventArgs);
+                    
+                    // TODO @jeongtae.lee : 추 후 풀링 방식으로 변경.
+                    recvEventArgs.Dispose();
                 }
                 else
                 {

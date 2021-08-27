@@ -94,8 +94,13 @@ namespace SimpleSocket.Server
 
         protected override void InternalOnClose()
         {
-            _acceptArgs?.Dispose();
-            _acceptArgs = null;
+            if (_acceptArgs != null)
+            {
+                _acceptArgs.Completed -= OnAcceptCompleted;
+                _acceptArgs.Dispose();
+
+                _acceptArgs = null;
+            }
         }
     }
 }

@@ -67,7 +67,7 @@ namespace SimpleSocket.Server
                 catch (Exception ex)
                 {
                     OnError(ex, "Session receive error!");
-                    
+
                     Close();
                 }
                 finally
@@ -79,16 +79,13 @@ namespace SimpleSocket.Server
 
                     if (SocketSessionState.RUNNING == state)
                     {
-                        StartReceive(args);    
+                        StartReceive(args);
                     }
                 }
             }
             else
             {
-                if (SocketSessionState.RUNNING == state)
-                {
-                    Close();
-                }
+                Close();
             }
         }
 

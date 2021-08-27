@@ -77,22 +77,14 @@ namespace SimpleSocket.Server
 
         public void Start(string sessionId, Socket socket_, IMessageFilter messageFilter_, Action<SocketSession> onClose)
         {
-            var oldState = Interlocked.CompareExchange(
-                ref _state
-                , SocketSessionState.STARTING
-                , SocketSessionState.IDLE);
+            var oldState = Interlocked.CompareExchange(ref _state, SocketSessionState.STARTING, SocketSessionState.IDLE);
 
             if (SocketSessionState.IDLE != oldState)
             {
-                throw new InvalidSocketSessionStateInMethodException(
-                    oldState
-                    , SocketSessionState.IDLE
-                    , nameof(Start));
+                throw new InvalidSocketSessionStateInMethodException(oldState, SocketSessionState.IDLE, nameof(Start));
             }
 
-            id = string.IsNullOrEmpty(sessionId)
-                ? throw new ArgumentException(null, nameof(sessionId))
-                : sessionId;
+            id = string.IsNullOrEmpty(sessionId) ? throw new ArgumentException(null, nameof(sessionId)) : sessionId;
             socket = socket_ ?? throw new ArgumentNullException(nameof(socket_));
             messageFilter = messageFilter_ ?? throw new ArgumentNullException(nameof(messageFilter_));
             _onClose = onClose ?? throw new ArgumentNullException(nameof(onClose));
@@ -127,13 +119,6 @@ namespace SimpleSocket.Server
         {
             try
             {
-                // NOTE @jeongtae.lee : 시작 상태 중 종료 처리로 들어갈 수 있기 때문에 상태를 체크.
-                var oldState = Interlocked.CompareExchange(ref _state, SocketSessionState.RUNNING, SocketSessionState.STARTING);
-                if (SocketSessionState.STARTING != oldState)
-                {
-                    return;
-                }
-
                 _socketSessionEventHandler?.OnSocketSessionStarted(this);
             }
             catch (Exception ex)
@@ -146,16 +131,7 @@ namespace SimpleSocket.Server
         {
             try
             {
-                var oldState = Interlocked.CompareExchange(ref _state, SocketSessionState.TERMINATED, SocketSessionState.TERMINATING);
-                if (SocketSessionState.TERMINATING != oldState)
-                {
-                    return;
-                }
-
                 _socketSessionEventHandler?.OnSocketSessionClosed(this);
-
-                id = string.Empty;
-                socket = null;
             }
             catch (Exception ex)
             {

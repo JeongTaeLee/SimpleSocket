@@ -97,16 +97,9 @@ namespace SimpleSocket.Client
                 var ipAddress = IPAddress.Parse(config.ip);
                 var endPoint = new IPEndPoint(ipAddress, config.port);
 
-                var tempSocket = new Socket(config.socketType, config.protocolType);
-                tempSocket.Connect(endPoint);
+                socket = new Socket(config.socketType, config.protocolType);
+                socket.Connect(endPoint);
 
-                if (!tempSocket.Connected)
-                {
-                    throw new Exception("Connect failed");
-                }
-
-                socket = tempSocket;
-        
                 InternalOnStart();
 
                 _state = SocketClientState.RUNNING;
