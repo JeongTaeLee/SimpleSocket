@@ -75,7 +75,7 @@ namespace SimpleSocket.Server
             _socketSessionEventHandler?.OnError(this, ex, msg);
         }
 
-        public void Start(string sessionId, Socket sck, Action<SocketSession> onClose, IMessageFilter messageFilter)
+        public void Start(string sessionId, Socket socket_, IMessageFilter messageFilter_, Action<SocketSession> onClose)
         {
             var oldState = Interlocked.CompareExchange(
                 ref _state
@@ -93,10 +93,9 @@ namespace SimpleSocket.Server
             id = string.IsNullOrEmpty(sessionId)
                 ? throw new ArgumentException(null, nameof(sessionId))
                 : sessionId;
-
-            socket = sck ?? throw new ArgumentNullException(nameof(sck));
+            socket = socket_ ?? throw new ArgumentNullException(nameof(socket_));
+            messageFilter = messageFilter_ ?? throw new ArgumentNullException(nameof(messageFilter_));
             _onClose = onClose ?? throw new ArgumentNullException(nameof(onClose));
-            this.messageFilter = messageFilter ?? throw new ArgumentNullException(nameof(messageFilter));
 
             try
             {

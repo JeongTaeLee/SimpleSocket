@@ -26,9 +26,9 @@ namespace SimpleSocket.Server
             _recvBufferManager.InitBuffer();
         }
 
-        protected override SocketListener CreateListener(SocketListenerConfig config)
+        protected override SocketListener CreateListener()
         {
-            return new SocketAsyncEventArgsListener(config);
+            return new SocketAsyncEventArgsListener();
         }
 
         protected override SocketSession CreateSession(string sessionId)
@@ -43,7 +43,7 @@ namespace SimpleSocket.Server
             return new SocketAsyncEventArgsSession(recvEventArgs);
         }
 
-        protected override void InternalOnSessionClose(SocketSession closeSocketSession)
+        protected override void InternalSessionClosed(SocketSession closeSocketSession)
         {
             if (closeSocketSession == null)
             {

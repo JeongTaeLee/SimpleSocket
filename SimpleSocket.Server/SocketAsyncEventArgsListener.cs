@@ -9,7 +9,7 @@ namespace SimpleSocket.Server
     {
         private SocketAsyncEventArgs _acceptArgs = null;
 
-        public SocketAsyncEventArgsListener(SocketListenerConfig listenerConfig) : base(listenerConfig)
+        public SocketAsyncEventArgsListener()
         {
         }
 
@@ -71,7 +71,7 @@ namespace SimpleSocket.Server
             ProcessAccept(e);
         }
         
-        protected override void OnStart()
+        protected override void InternalOnStart()
         {
             try
             {
@@ -92,7 +92,7 @@ namespace SimpleSocket.Server
             }
         }
 
-        protected override void OnClose()
+        protected override void InternalOnClose()
         {
             _acceptArgs?.Dispose();
             _acceptArgs = null;
