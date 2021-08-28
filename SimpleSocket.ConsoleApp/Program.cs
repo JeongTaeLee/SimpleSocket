@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using SimpleSocket.Common;
 using SimpleSocket.Server;
@@ -29,23 +30,31 @@ namespace SimpleSocket.ConsoleApp
         private int connectCount = 0;
         private int disconnectCount = 0;
 
+        private int index = 0;
+
+        public SocketSessionEventHandler(int index_)
+        {
+            index = index_;
+        }
+
         public void OnSocketSessionStarted(ISocketSession session)
         {
-            Console.WriteLine("Connect : " + connectCount++);
+            Console.WriteLine($"Session - {index} : Started");
         }
 
         public void OnSocketSessionClosed(ISocketSession session)
         {
-            Console.WriteLine("Disconnect : " + disconnectCount++);
+            Console.WriteLine($"Session - {index} : Closed");
         }
 
         public ValueTask OnReceived(ISocketSession session, object receivedData)
         {
+            Console.WriteLine($"Session - {index} : Received({receivedData})");
             return ValueTask.CompletedTask;
         }
 
         public void OnError(ISocketSession session, Exception ex, string message)
-        {
+        { 
             throw ex;
         }
 
@@ -55,16 +64,22 @@ namespace SimpleSocket.ConsoleApp
     {
         static void Main(string[] args)
         {
-            var sessionEventHandler = new SocketSessionEventHandler();
-
+            int sessionCount = 0;
+        
             var server = new SocketAsyncEventArgsServer(new SocketAsyncEventArgsServerConfig.Builder().Build(),
                 new GenericMessageFilterFactory<TestFilter>());
 
             server.onNewSocketSessionConnected += delegate (SocketSessionConfigurator configurator)
             {
-                configurator.SetSocketSessionEventHandler(sessionEventHandler);
+                Interlocked.Increment(ref sessionCount);
+                configurator.SetSocketSessionEventHandler(new SocketSessionEventHandler(sessionCount));
             };
 
+            server.onError += delegate (Exception ex, string msg)
+            {
+                throw ex;
+            };
+             
             server.AddListener(new SocketListenerConfig.Builder("0.0.0.0", 9199).SetBacklog(5000).Build());
 
             server.Start();

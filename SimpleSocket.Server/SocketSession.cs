@@ -6,33 +6,16 @@ using SimpleSocket.Common;
 
 namespace SimpleSocket.Server
 {
-    public class InvalidSocketSessionStateInMethodException : Exception
-    {
-        public InvalidSocketSessionStateInMethodException(int oldState, int correctState, string calledMethodName,
-            Exception innerException = null)
-            : base($"Invalid session status. " +
-                   $"The \"{calledMethodName}\" method can only be called in the \"{SocketSessionState.Name(correctState)}\" state - " +
-                   $"Invalid state({SocketSessionState.Name(oldState)})", innerException)
-        {
-        }
-    }
-
-    // 값 바꾸지 말 것!
     public static class SocketSessionState
     {
-        public const int IDLE = 1; // 초기 상태.
-
-        public const int STARTING = 100; // 시작 중. 
-        public const int RUNNING = 101; // 작동 중
+        public const int NORMAL = 1; // 초기 상태.
 
         public const int TERMINATING = 200; // 종료 중.
         public const int TERMINATED = 201; // 종료됨.
 
         public static string Name(int state) => state switch
         {
-            IDLE => nameof(IDLE),
-            STARTING => nameof(STARTING),
-            RUNNING => nameof(RUNNING),
+            NORMAL => nameof(NORMAL),
             TERMINATING => nameof(TERMINATING),
             TERMINATED => nameof(TERMINATED),
             _ => "Error"
@@ -41,16 +24,16 @@ namespace SimpleSocket.Server
 
     public abstract class SocketSession : ISocketSession
     {
-        private int _state = SocketSessionState.IDLE;
+        private int _state = SocketSessionState.NORMAL;
         public int state => _state;
 
         private Action<SocketSession> _onClose = null;
-        private ISocketSessionEventHandler _socketSessionEventHandler = null;
-
         protected IMessageFilter messageFilter { get; private set; } = null;
 
         public string id { get; private set; } = string.Empty;
         public Socket socket { get; private set; } = null;
+        public ISocketSessionEventHandler socketSessionEventHandler { get; private set; } = null;
+        public bool running => (_state != SocketSessionState.TERMINATING && _state != SocketSessionState.TERMINATED); 
 
         protected virtual void InternalOnStart()
         {
@@ -62,9 +45,9 @@ namespace SimpleSocket.Server
 
         protected ValueTask OnReceive(object message)
         {
-            if (_socketSessionEventHandler != null)
+            if (socketSessionEventHandler != null)
             {
-                return _socketSessionEventHandler.OnReceived(this, message);
+                return socketSessionEventHandler.OnReceived(this, message);
             }
 
             return new ValueTask();
@@ -72,30 +55,74 @@ namespace SimpleSocket.Server
 
         protected void OnError(Exception ex, string msg = "")
         {
-            _socketSessionEventHandler?.OnError(this, ex, msg);
+            socketSessionEventHandler?.OnError(this, ex, msg);
         }
 
-        public void Start(string sessionId, Socket socket_, IMessageFilter messageFilter_, Action<SocketSession> onClose)
+        public void Initialize(string sessionId, Socket socket_, IMessageFilter messageFilter_, Action<SocketSession> onClose)
         {
-            var oldState = Interlocked.CompareExchange(ref _state, SocketSessionState.STARTING, SocketSessionState.IDLE);
-
-            if (SocketSessionState.IDLE != oldState)
+            if (string.IsNullOrEmpty(sessionId))
             {
-                throw new InvalidSocketSessionStateInMethodException(oldState, SocketSessionState.IDLE, nameof(Start));
+                throw new ArgumentNullException(nameof(sessionId));
             }
 
-            id = string.IsNullOrEmpty(sessionId) ? throw new ArgumentException(null, nameof(sessionId)) : sessionId;
-            socket = socket_ ?? throw new ArgumentNullException(nameof(socket_));
-            messageFilter = messageFilter_ ?? throw new ArgumentNullException(nameof(messageFilter_));
-            _onClose = onClose ?? throw new ArgumentNullException(nameof(onClose));
+            if (socket_ == null)
+            {
+                throw new ArgumentNullException(nameof(socket));
+            }
 
+            if (messageFilter_ == null)
+            {
+                throw new ArgumentNullException(nameof(messageFilter));
+            }
+
+            if (onClose == null)
+            {
+                throw new ArgumentNullException(nameof(_onClose));
+            }
+
+            id = sessionId;
+            socket = socket_;
+            messageFilter = messageFilter_;
+            _onClose = onClose;
+        }
+
+        public void Start()
+        {
             try
             {
+                if (_state == SocketSessionState.TERMINATING || _state == SocketSessionState.TERMINATED)
+                {
+                    throw ServerExceptionUtil.IOEInvalidSessionState(_state);
+                }
+
+                if (string.IsNullOrEmpty(id))
+                {
+                    throw ExceptionUtil.IOEVariableNotSet(nameof(id));
+                }
+
+                if (socket == null)
+                {
+                    throw ExceptionUtil.IOEVariableNotSet(nameof(socket));
+                }
+
+                if (messageFilter == null)
+                {
+                    throw ExceptionUtil.IOEVariableNotSet(nameof(messageFilter));
+                }
+
+                if (_onClose == null)
+                {
+                    throw ExceptionUtil.IOEVariableNotSet(nameof(_onClose));
+                }
+
                 InternalOnStart();
             }
             catch
             {
+                id = string.Empty;
                 socket = null;
+                messageFilter = null;
+                _onClose = null;
                 throw;
             }
         }
@@ -103,7 +130,7 @@ namespace SimpleSocket.Server
         public void Close()
         {
             // 종료 중이거나 종료이면 캔슬
-            if (_state == SocketSessionState.TERMINATING || _state == SocketSessionState.TERMINATED)
+            if (!running)
             {
                 return;
             }
@@ -113,30 +140,6 @@ namespace SimpleSocket.Server
             InternalOnClose();
 
             _onClose.Invoke(this);
-        }
-
-        public void OnStarted()
-        {
-            try
-            {
-                _socketSessionEventHandler?.OnSocketSessionStarted(this);
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
-        }
-
-        public void OnClosed()
-        {
-            try
-            {
-                _socketSessionEventHandler?.OnSocketSessionClosed(this);
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
         }
 
         public void Send(byte[] buffer)
@@ -151,12 +154,9 @@ namespace SimpleSocket.Server
 
         public virtual void Send(byte[] buffer, int offset, int length)
         {
-            if (SocketSessionState.RUNNING != _state)
+            if (!running)
             {
-                throw new InvalidSocketSessionStateInMethodException(
-                    _state
-                    , SocketSessionState.RUNNING
-                    , nameof(Send));
+                throw ServerExceptionUtil.IOEInvalidSessionState(_state);
             }
 
             socket.Send(buffer, offset, length, SocketFlags.None);
@@ -174,20 +174,17 @@ namespace SimpleSocket.Server
 
         public virtual Task SendAsync(ArraySegment<byte> segment)
         {
-            if (SocketSessionState.RUNNING != _state)
+            if (!running)
             {
-                throw new InvalidSocketSessionStateInMethodException(
-                    _state
-                    , SocketSessionState.RUNNING
-                    , nameof(Send));
+                throw ServerExceptionUtil.IOEInvalidSessionState(_state);
             }
-            
+
             return socket.SendAsync(segment, SocketFlags.None);
         }
 
         public SocketSession SetSocketSessionEventHandler(ISocketSessionEventHandler socketSessionEventHandler)
         {
-            _socketSessionEventHandler = socketSessionEventHandler ??
+            this.socketSessionEventHandler = socketSessionEventHandler ??
                                          throw new ArgumentNullException(nameof(socketSessionEventHandler));
             return this;
         }

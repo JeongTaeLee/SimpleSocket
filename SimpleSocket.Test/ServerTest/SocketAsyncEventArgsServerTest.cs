@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
@@ -38,57 +39,77 @@ namespace SimpleSocket.Test.ServerTest
         }
 
         [Test]
-        public void HandleTest()
+        public async Task HandleTest()
         {
             const int testConnectCount = 500;
-            int currentRequest = 0;
 
-            var connectedCount = 0;
-            var disconnectedCount = 0;
+            var startedCount = 0;
+            var closedCount = 0;
+            var receivedCount = 0;
+            var errorCount = 0;
+
+            var testMsgStr = "Hello world";
+            var testMsgBytes = CreateMessage(testMsgStr);
 
             var sessionHandler = new EventSocketSessionEventHandler();
             sessionHandler.onSocketSessionStarted += (ssn) =>
             {
-                Interlocked.Increment(ref connectedCount);
+                Interlocked.Increment(ref startedCount);
             };
             sessionHandler.onSocketSessionClosed += (ssn) =>
             {
-                Interlocked.Increment(ref disconnectedCount);
+                Interlocked.Increment(ref closedCount);
+            };
+            sessionHandler.onReceived += (ssn, msg) =>
+            {
+                if (testMsgStr == msg.ToString())
+                {
+                    Interlocked.Increment(ref receivedCount);
+                }
             };
             sessionHandler.onError += (session, exception, arg3) =>
             {
-              //  Assert.Fail();
+                Interlocked.Increment(ref errorCount);
             };
 
             var server = CreateServer(sessionHandler);
             server.onError += (ex, msg) =>
             {
-                throw ex;
+                ++errorCount;
             };
 
-            // var serverIp = "0.0.0.0";
+            var serverIp = "0.0.0.0";
             var serverPort = TestUtil.GetFreePortNumber();
-            server.AddListener(new SocketListenerConfig.Builder("0.0.0.0", serverPort).Build());
+            server.AddListener(new SocketListenerConfig.Builder(serverIp, serverPort).Build());
+
+            List<Task> tasks = new List<Task>();
 
             using (var serverLauncher = server.ToServerLauncher())
             {
-                // Connect
+                for (int index = 0; index < testConnectCount; ++index)
                 {
-                    for (currentRequest = 0; currentRequest < testConnectCount; ++currentRequest)
-                    {
-                        var client = CreateClient("127.0.0.1", serverPort);
-
-                        using (var clientLauncher = client.ToClientLauncher())
-                        {
-                        }
-                    }
+                    tasks.Add(RunClient(testMsgBytes));
                 }
             }
 
-            //Thread.Sleep(10000);
+            await Task.WhenAll(tasks);
+            await Task.Delay(5000);
 
-            Assert.AreEqual(testConnectCount, connectedCount);
-            Assert.AreEqual(testConnectCount, disconnectedCount);
+            Assert.AreEqual(0, errorCount);
+
+            Assert.AreEqual(testConnectCount, startedCount);
+            Assert.AreEqual(testConnectCount, closedCount);
+            Assert.AreEqual(testConnectCount, receivedCount);
+
+            async Task RunClient(byte[] sendByte)
+            {
+                var client = CreateClient("127.0.0.1", serverPort);
+                using (var clientLauncher = client.ToClientLauncher())
+                {
+                    // send
+                    client.Send(sendByte);
+                }
+            }
         }
 
         [Test]
@@ -127,7 +148,7 @@ namespace SimpleSocket.Test.ServerTest
             Assert.IsFalse(TestUtil.TryConnect(localIp, afterServerStartPort));
         }
 
-        public SocketAsyncEventArgsServer CreateServer(ISocketSessionEventHandler handler = null)
+        private SocketAsyncEventArgsServer CreateServer(ISocketSessionEventHandler handler = null)
         {
             var server = new SocketAsyncEventArgsServer(
                 new SocketAsyncEventArgsServerConfig.Builder().Build()
@@ -144,7 +165,7 @@ namespace SimpleSocket.Test.ServerTest
             return server;
         }
 
-        public SocketAsyncEventArgsClient CreateClient(string ip, int port, ISocketClientEventHandler handler = null)
+        private SocketAsyncEventArgsClient CreateClient(string ip, int port, ISocketClientEventHandler handler = null)
         {
             var client = new SocketAsyncEventArgsClient(
                 new SocketAsyncEventArgsClientConfig.Builder().Build()
@@ -158,5 +179,17 @@ namespace SimpleSocket.Test.ServerTest
 
             return client;
         }
+        private byte[] CreateMessage(string data)
+        {
+            var testBody = Encoding.UTF8.GetBytes(data);
+            var testHeader = BitConverter.GetBytes(testBody.Length);
+
+            var testBuffer = new byte[4 + testBody.Length];
+            Buffer.BlockCopy(testHeader, 0, testBuffer, 0, testHeader.Length);
+            Buffer.BlockCopy(testBody, 0, testBuffer, testHeader.Length, testBody.Length);
+
+            return testBuffer;
+        }
+
     }
 }

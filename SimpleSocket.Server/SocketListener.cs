@@ -1,7 +1,7 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading.Tasks;
+using SimpleSocket.Common;
 
 namespace SimpleSocket.Server
 {
@@ -19,16 +19,13 @@ namespace SimpleSocket.Server
         {
         }
 
-        protected bool OnAccept(Socket sck)
+        protected void OnAccept(Socket sck)
         {
             var result = _onAccept.Invoke(this, sck);
             if (!result)
             {
                 sck.SafeClose();
-                return false;
             }
-
-            return true;
         }
 
         protected virtual void InternalOnStart() { }
@@ -53,7 +50,10 @@ namespace SimpleSocket.Server
                 socket = new Socket(listenerConfig.socketType, listenerConfig.protocolType);
                 socket.Bind(new IPEndPoint(IPAddress.Parse(listenerConfig.ip), listenerConfig.port));
                 socket.Listen(listenerConfig.backlog);
-                
+
+                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.DontLinger, true);
+
                 InternalOnStart();
                 
                 running = true;
@@ -70,11 +70,16 @@ namespace SimpleSocket.Server
 
         public void Close()
         {
+            if (!running)
+            {
+                return;
+            }
+
             running = false;
             
             InternalOnClose();
             
-            socket?.Close();
+            socket?.Dispose();
             socket = null;
         }
 

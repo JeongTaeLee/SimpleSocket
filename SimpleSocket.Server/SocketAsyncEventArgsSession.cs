@@ -77,7 +77,7 @@ namespace SimpleSocket.Server
                         _currentOffset = _originOffset;
                     }
 
-                    if (SocketSessionState.RUNNING == state)
+                    if (running)
                     {
                         StartReceive(args);
                     }

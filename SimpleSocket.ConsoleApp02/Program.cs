@@ -47,25 +47,43 @@ namespace SimpleSocket.ConsoleApp02
 
     class Program
     {
+        static SocketAsyncEventArgsClientConfig argsConfig = new SocketAsyncEventArgsClientConfig.Builder().Build();
+        static SocketClientConfig config = new SocketClientConfig.Builder("127.0.0.1", 9199).Build();
+
         static async Task Main(string[] args)
         {
             var argsConfig = new SocketAsyncEventArgsClientConfig.Builder().Build();
             var config = new SocketClientConfig.Builder("127.0.0.1", 9199).Build();
 
-            for (int index = 0; index < 100; ++index)
+            Parallel.For(0, 100, (index) =>
             {
-                var client = new SocketAsyncEventArgsClient(argsConfig, config, new TestFilter());
-                client.Start();
-                client.Close();
+                RunClient(index);
+            });
 
-                Console.WriteLine($"{index} Request!");
+            while (true)
+            {
+
             }
-
-            await Task.Delay(100000);
-            //while (true)
-            //{
-
-            //}
         }
+
+        static void RunClient(int index)
+        {
+            var msg = $"Hello world - {index}";
+            var msgBytes = Encoding.UTF8.GetBytes(msg);
+            var sizeBytes = BitConverter.GetBytes(msgBytes.Length);
+            
+            var totalBytes = new byte[msgBytes.Length + sizeBytes.Length];
+            Buffer.BlockCopy(sizeBytes, 0, totalBytes, 0, sizeBytes.Length);
+            Buffer.BlockCopy(msgBytes, 0, totalBytes, sizeBytes.Length, msgBytes.Length);
+
+            var client = new SocketAsyncEventArgsClient(argsConfig, config, new TestFilter());
+            client.Start();
+
+            client.Send(totalBytes);
+
+            client.Close();
+            Console.WriteLine($"Request - {index}");
+        }
+
     }
 }

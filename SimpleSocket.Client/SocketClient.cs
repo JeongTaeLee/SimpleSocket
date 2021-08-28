@@ -106,7 +106,7 @@ namespace SimpleSocket.Client
             }
             catch
             {
-                socket?.Dispose();
+                socket?.SafeClose();
                 socket = null;
                 
                 throw;
@@ -130,7 +130,7 @@ namespace SimpleSocket.Client
             
             InternalOnClose();
 
-            socket?.Dispose();
+            socket?.SafeClose();
             socket = null;
 
             _state = SocketClientState.TERMINATED;

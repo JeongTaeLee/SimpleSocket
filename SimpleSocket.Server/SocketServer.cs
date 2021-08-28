@@ -93,7 +93,7 @@ namespace SimpleSocket.Server
             var listener = CreateListener();
             if (listener == null)
             {
-                throw new InvalidOperationException($"{nameof(CreateListener)} returned null.");
+                throw ExceptionUtil.IOEReturnedNull(nameof(CreateListener));
             }
 
             _listenerPairs[(config.ip, config.port)].SetListener(listener);
@@ -125,8 +125,8 @@ namespace SimpleSocket.Server
 
                 InternalOnSessionClosed(closeSocketSession);
 
-                closeSocketSession.socket.Close();
-                closeSocketSession.OnClosed();
+                closeSocketSession.socketSessionEventHandler?.OnSocketSessionClosed(closeSocketSession);
+                closeSocketSession.socket.Dispose();
             }
             catch (Exception ex)
             {
@@ -150,16 +150,35 @@ namespace SimpleSocket.Server
                 var newMsgFilterFactory = _messageFilterFactory.Create();
                 if (newMsgFilterFactory == null)
                 {
-                    throw new Exception("Message file factory returned null.");
+                    throw ExceptionUtil.IOEReturnedNull("Message filter factory");
                 }
 
                 var newSession = CreateSession(newSessionId);
+                if (newSession == null)
+                {
+                    throw ExceptionUtil.IOEReturnedNull(nameof(CreateSession));
+                }
+
                 _sessions[newSessionId] = newSession;
+
+                newSession.Initialize(newSessionId, socket, newMsgFilterFactory, OnSessionClosed);
 
                 onNewSocketSessionConnected?.Invoke(new SocketSessionConfigurator(newSession));
 
-                newSession.Start(newSessionId, socket, newMsgFilterFactory, OnSessionClosed);
-                newSession.OnStarted();
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        newSession.socketSessionEventHandler?.OnSocketSessionStarted(newSession);
+                        newSession.Start();
+                    }
+                    catch (Exception ex)
+                    {
+                        OnError(ex, "[SocketServer.OnAccept] Socket accept failed");
+
+                        _sessions.TryRemove(newSessionId, out var _);
+                    }
+                });
 
                 return true;
             }
@@ -176,7 +195,6 @@ namespace SimpleSocket.Server
         protected void OnErrorFromListener(SocketListener listener, Exception ex, string message)
         {
             OnError(ex, $"Error! listener({listener.listenerConfig.ip}:{listener.listenerConfig.port}) - {message}");
-
         }
 
         protected void OnError(Exception ex, string message = "")
