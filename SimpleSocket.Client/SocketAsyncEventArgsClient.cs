@@ -1,6 +1,7 @@
 using System;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using SimpleSocket.Client.Utils;
 using SimpleSocket.Common;
 
 namespace SimpleSocket.Client
@@ -123,38 +124,19 @@ namespace SimpleSocket.Client
 
         public override void Send(byte[] buffer)
         {
-            if (SocketClientState.RUNNING != state)
-            {
-                throw new InvalidSocketClientStateInMethodException(
-                    state
-                    , SocketClientState.RUNNING
-                    , nameof(Send));
-            }
-            
             Send(buffer, 0, buffer.Length);
         }
 
         public override void Send(ArraySegment<byte> segment)
         {
-            if (SocketClientState.RUNNING != state)
-            {
-                throw new InvalidSocketClientStateInMethodException(
-                    state
-                    , SocketClientState.RUNNING
-                    , nameof(Send));
-            }
-
             Send(segment.Array, segment.Offset, segment.Count);
         }
 
         public override void Send(byte[] buffer, int offset, int length)
         {
-            if (SocketClientState.RUNNING != state)
+            if (state != SocketClientState.RUNNING)
             {
-                throw new InvalidSocketClientStateInMethodException(
-                    state
-                    , SocketClientState.RUNNING
-                    , nameof(Send));
+                throw ClientExceptionUtil.IOEInvalidSessionState(state);
             }
 
             socket.Send(buffer, offset, length, SocketFlags.None);
@@ -162,38 +144,19 @@ namespace SimpleSocket.Client
 
         public override Task SendAsync(byte[] buffer)
         {
-            if (SocketClientState.RUNNING != state)
-            {
-                throw new InvalidSocketClientStateInMethodException(
-                    state
-                    , SocketClientState.RUNNING
-                    , nameof(Send));
-            }
-            
             return SendAsync(new ArraySegment<byte>(buffer, 0, buffer.Length));
         }
 
         public override Task SendAsync(byte[] buffer, int offset, int length)
-        {
-            if (SocketClientState.RUNNING != state)
-            {
-                throw new InvalidSocketClientStateInMethodException(
-                    state
-                    , SocketClientState.RUNNING
-                    , nameof(Send));
-            }
-            
+        {   
             return SendAsync(new ArraySegment<byte>(buffer, offset, length));
         }
 
         public override Task SendAsync(ArraySegment<byte> segment)
-        {               
-            if (SocketClientState.RUNNING != state)
+        {
+            if (state != SocketClientState.RUNNING)
             {
-                throw new InvalidSocketClientStateInMethodException(
-                    state
-                    , SocketClientState.RUNNING
-                    , nameof(Send));
+                throw ClientExceptionUtil.IOEInvalidSessionState(state);
             }
             
             return socket.SendAsync(segment, SocketFlags.None);

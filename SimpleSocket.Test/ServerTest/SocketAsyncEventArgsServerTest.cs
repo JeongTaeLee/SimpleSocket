@@ -33,11 +33,6 @@ namespace SimpleSocket.Test.ServerTest
             }
         }
 
-        [SetUp]
-        public void SetUp()
-        {
-        }
-
         [Test]
         public async Task HandleTest()
         {
@@ -96,7 +91,7 @@ namespace SimpleSocket.Test.ServerTest
             await Task.Delay(5000);
 
             Assert.AreEqual(0, errorCount);
-
+            
             Assert.AreEqual(testConnectCount, startedCount);
             Assert.AreEqual(testConnectCount, closedCount);
             Assert.AreEqual(testConnectCount, receivedCount);
@@ -156,7 +151,7 @@ namespace SimpleSocket.Test.ServerTest
 
             if (handler != null)
             {
-                server.onNewSocketSessionConnected += sessionConfigurator =>
+                server.onSessionConfiguration += sessionConfigurator =>
                 {
                     sessionConfigurator.SetSocketSessionEventHandler(handler);
                 };

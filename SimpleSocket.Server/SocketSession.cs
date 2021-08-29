@@ -10,14 +10,14 @@ namespace SimpleSocket.Server
     {
         public const int NORMAL = 1; // 초기 상태.
 
-        public const int TERMINATING = 200; // 종료 중.
-        public const int TERMINATED = 201; // 종료됨.
+        public const int CLOSING = 200; // 종료 중.
+        public const int CLOSED = 201; // 종료됨.
 
         public static string Name(int state) => state switch
         {
             NORMAL => nameof(NORMAL),
-            TERMINATING => nameof(TERMINATING),
-            TERMINATED => nameof(TERMINATED),
+            CLOSING => nameof(CLOSING),
+            CLOSED => nameof(CLOSED),
             _ => "Error"
         };
     }
@@ -28,20 +28,17 @@ namespace SimpleSocket.Server
         public int state => _state;
 
         private Action<SocketSession> _onClose = null;
+
         protected IMessageFilter messageFilter { get; private set; } = null;
+        protected ISocketSessionEventHandler socketSessionEventHandler { get; private set; } = null;
 
         public string id { get; private set; } = string.Empty;
         public Socket socket { get; private set; } = null;
-        public ISocketSessionEventHandler socketSessionEventHandler { get; private set; } = null;
-        public bool running => (_state != SocketSessionState.TERMINATING && _state != SocketSessionState.TERMINATED); 
+        public bool running => (_state != SocketSessionState.CLOSING && _state != SocketSessionState.CLOSED); 
 
-        protected virtual void InternalOnStart()
-        {
-        }
+        protected virtual void InternalOnStart() { }
 
-        protected virtual void InternalOnClose()
-        {
-        }
+        protected virtual void InternalOnClose() { }
 
         protected ValueTask OnReceive(object message)
         {
@@ -90,7 +87,7 @@ namespace SimpleSocket.Server
         {
             try
             {
-                if (_state == SocketSessionState.TERMINATING || _state == SocketSessionState.TERMINATED)
+                if (_state == SocketSessionState.CLOSING || _state == SocketSessionState.CLOSED)
                 {
                     throw ServerExceptionUtil.IOEInvalidSessionState(_state);
                 }
@@ -135,11 +132,36 @@ namespace SimpleSocket.Server
                 return;
             }
 
-            Interlocked.Exchange(ref _state, SocketSessionState.TERMINATING);
+            Interlocked.Exchange(ref _state, SocketSessionState.CLOSING);
 
             InternalOnClose();
 
             _onClose.Invoke(this);
+        }
+
+        public virtual void OnStarted()
+        {
+            try
+            {
+                socketSessionEventHandler.OnSocketSessionStarted(this);
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+        }
+
+        public virtual void OnClosed()
+        {
+            try
+            {
+                _state = SocketSessionState.CLOSED;
+                socketSessionEventHandler.OnSocketSessionClosed(this);
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
         }
 
         public void Send(byte[] buffer)

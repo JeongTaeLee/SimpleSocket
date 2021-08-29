@@ -5,21 +5,11 @@ using System.Net.Sockets;
 using System.Resources;
 using System.Threading;
 using System.Threading.Tasks;
+using SimpleSocket.Client.Utils;
 using SimpleSocket.Common;
 
 namespace SimpleSocket.Client
 {       
-    public class InvalidSocketClientStateInMethodException : Exception
-    {
-        public InvalidSocketClientStateInMethodException(int oldState, int correctState, string calledMethodName,
-            Exception innerException = null)
-            : base($"Invalid session status. " +
-                   $"The \"{calledMethodName}\" method can only be called in the \"{SocketClientState.Name(correctState)}\" state - " +
-                   $"Invalid state({SocketClientState.Name(oldState)})", innerException)
-        {
-        }
-    }
-    
     public static class SocketClientState
     {
         public const int IDLE = 1; // 초기 상태.
@@ -56,7 +46,6 @@ namespace SimpleSocket.Client
         
         public readonly SocketClientConfig config  = null;
         
-
         public SocketClient(SocketClientConfig config, IMessageFilter messageFilter)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
@@ -78,18 +67,12 @@ namespace SimpleSocket.Client
         protected virtual void InternalOnClose() { }
 
         public void Start()
-        {            
-            var oldState = Interlocked.CompareExchange(
-                ref _state
-                , SocketClientState.STARTING
-                , SocketClientState.IDLE);
-            
+        {
+            var oldState = Interlocked.CompareExchange(ref _state, SocketClientState.STARTING, SocketClientState.IDLE);
+
             if (SocketClientState.IDLE != oldState)
             {
-                throw new InvalidSocketClientStateInMethodException(
-                    oldState
-                    , SocketClientState.IDLE
-                    , nameof(Start));
+                throw ClientExceptionUtil.IOEInvalidSessionState(oldState);
             }
             
             try
@@ -115,17 +98,10 @@ namespace SimpleSocket.Client
 
         public void Close()
         {            
-            var oldState = Interlocked.CompareExchange(
-                ref _state
-                , SocketClientState.TERMINATING
-                , SocketClientState.RUNNING);
-            
+            var oldState = Interlocked.CompareExchange(ref _state, SocketClientState.TERMINATING, SocketClientState.RUNNING);
             if (SocketClientState.RUNNING != oldState)
             {
-                throw new InvalidSocketClientStateInMethodException(
-                    oldState
-                    , SocketClientState.RUNNING
-                    , nameof(Close));
+                return;
             }
             
             InternalOnClose();
@@ -133,8 +109,8 @@ namespace SimpleSocket.Client
             socket?.SafeClose();
             socket = null;
 
-            _state = SocketClientState.TERMINATED;
-                
+            Interlocked.Exchange(ref _state, SocketClientState.TERMINATED);
+
             socketClientEventHandler?.OnSocketClientClosed(this);
         }
 

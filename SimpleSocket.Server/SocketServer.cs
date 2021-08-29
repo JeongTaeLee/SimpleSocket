@@ -34,7 +34,7 @@ namespace SimpleSocket.Server
 
         public bool running { get; private set; } = false;
 
-        public Action<SocketSessionConfigurator> onNewSocketSessionConnected { get; set; } = null;
+        public Action<SocketSessionConfigurator> onSessionConfiguration { get; set; } = null;
         public Action<Exception, string> onError { get; set; } = null;
 
         public SocketServer(IMessageFilterFactory messageFilterFactory)
@@ -125,8 +125,9 @@ namespace SimpleSocket.Server
 
                 InternalOnSessionClosed(closeSocketSession);
 
-                closeSocketSession.socketSessionEventHandler?.OnSocketSessionClosed(closeSocketSession);
                 closeSocketSession.socket.Dispose();
+
+                closeSocketSession.OnClosed();
             }
             catch (Exception ex)
             {
@@ -163,14 +164,18 @@ namespace SimpleSocket.Server
 
                 newSession.Initialize(newSessionId, socket, newMsgFilterFactory, OnSessionClosed);
 
-                onNewSocketSessionConnected?.Invoke(new SocketSessionConfigurator(newSession));
+                onSessionConfiguration?.Invoke(new SocketSessionConfigurator(newSession));
 
                 Task.Run(() =>
                 {
                     try
                     {
-                        newSession.socketSessionEventHandler?.OnSocketSessionStarted(newSession);
-                        newSession.Start();
+                        newSession.OnStarted();
+
+                        if (newSession.running)
+                        {
+                            newSession.Start();
+                        }
                     }
                     catch (Exception ex)
                     {

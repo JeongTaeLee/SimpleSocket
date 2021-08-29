@@ -69,7 +69,7 @@ namespace SimpleSocket.ConsoleApp
             var server = new SocketAsyncEventArgsServer(new SocketAsyncEventArgsServerConfig.Builder().Build(),
                 new GenericMessageFilterFactory<TestFilter>());
 
-            server.onNewSocketSessionConnected += delegate (SocketSessionConfigurator configurator)
+            server.onSessionConfiguration += delegate (SocketSessionConfigurator configurator)
             {
                 Interlocked.Increment(ref sessionCount);
                 configurator.SetSocketSessionEventHandler(new SocketSessionEventHandler(sessionCount));
