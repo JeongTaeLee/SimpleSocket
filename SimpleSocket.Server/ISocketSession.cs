@@ -5,6 +5,8 @@ namespace SimpleSocket.Server
 {
     public interface ISocketSession
     {
+        string id { get; }
+
         void Close();
 
         void Send(byte[] buffer);
