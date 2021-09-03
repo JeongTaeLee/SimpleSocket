@@ -51,9 +51,6 @@ namespace SimpleSocket.Server
                 socket.Bind(new IPEndPoint(IPAddress.Parse(listenerConfig.ip), listenerConfig.port));
                 socket.Listen(listenerConfig.backlog);
 
-                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.DontLinger, true);
-
                 InternalOnStart();
                 
                 running = true;
