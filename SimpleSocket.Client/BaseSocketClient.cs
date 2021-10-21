@@ -34,7 +34,7 @@ namespace SimpleSocket.Client
         }
     }
     
-    public abstract class SocketClient
+    public abstract class BaseSocketClient
     {
         private int _state = SocketClientState.IDLE;
         public int state => _state;
@@ -46,7 +46,7 @@ namespace SimpleSocket.Client
         
         public readonly SocketClientConfig config  = null;
         
-        public SocketClient(SocketClientConfig config, IMessageFilter messageFilter)
+        public BaseSocketClient(SocketClientConfig config, IMessageFilter messageFilter)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.messageFilter = messageFilter ?? throw new ArgumentNullException(nameof(messageFilter));
@@ -81,6 +81,7 @@ namespace SimpleSocket.Client
                 var endPoint = new IPEndPoint(ipAddress, config.port);
 
                 socket = new Socket(config.socketType, config.protocolType);
+                socket.NoDelay = config.noDelay;
                 socket.Connect(endPoint);
 
                 InternalOnStart();
@@ -122,7 +123,7 @@ namespace SimpleSocket.Client
         public abstract Task SendAsync(byte[] buffer, int offset, int length);
         public abstract Task SendAsync(ArraySegment<byte> segment);
 
-        public SocketClient SetSocketClientEventHandler(ISocketClientEventHandler handler)
+        public BaseSocketClient SetSocketClientEventHandler(ISocketClientEventHandler handler)
         {
             socketClientEventHandler = handler ?? throw new ArgumentNullException(nameof(handler));
             return this;

@@ -4,7 +4,7 @@ using SimpleSocket.Server;
 namespace SimpleSocket.Test
 {
     public class ServerLauncher<TServer> : IDisposable 
-        where TServer : SocketServer
+        where TServer : BaseSocketServer
     {
         public readonly TServer server;
         

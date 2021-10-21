@@ -66,7 +66,7 @@ namespace SimpleSocket.ConsoleApp
         {
             int sessionCount = 0;
         
-            var server = new SocketAsyncEventArgsServer(new SocketAsyncEventArgsServerConfig.Builder().Build(),
+            var server = new SocketAsyncEventArgsServer(new SocketServerOption.Builder().Build(),
                 new GenericMessageFilterFactory<TestFilter>());
 
             server.onSessionConfiguration += delegate (SocketSessionConfigurator configurator)

@@ -4,7 +4,7 @@ using SimpleSocket.Client;
 namespace SimpleSocket.Test
 {
     public class ClientLauncher<TClient> : IDisposable
-        where TClient : SocketClient
+        where TClient : BaseSocketClient
     {
         public readonly TClient client = null;
 

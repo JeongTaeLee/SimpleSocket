@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
 using NUnit.Framework;
 using SimpleSocket.Client;
 using SimpleSocket.Common;
@@ -146,7 +144,7 @@ namespace SimpleSocket.Test.ServerTest
         private SocketAsyncEventArgsServer CreateServer(ISocketSessionEventHandler handler = null)
         {
             var server = new SocketAsyncEventArgsServer(
-                new SocketAsyncEventArgsServerConfig.Builder().Build()
+                new SocketServerOption.Builder().Build()
                 , new GenericMessageFilterFactory<TestFilter>());
 
             if (handler != null)
@@ -162,10 +160,7 @@ namespace SimpleSocket.Test.ServerTest
 
         private SocketAsyncEventArgsClient CreateClient(string ip, int port, ISocketClientEventHandler handler = null)
         {
-            var client = new SocketAsyncEventArgsClient(
-                new SocketAsyncEventArgsClientConfig.Builder().Build()
-                , new SocketClientConfig.Builder(ip, port).Build()
-                , new TestFilter());
+            var client = new SocketAsyncEventArgsClient(new SocketClientConfig.Builder(ip, port).Build(), new TestFilter());
 
             if (handler != null)
             {

@@ -34,15 +34,31 @@ namespace SimpleSocket.Test.ClientTest
                 builder.SetSocketType(SocketType.Unknown);
             });
              
+            TestUtil.Assert_Exception(() =>
+            {
+                builder.SetRecvBufferSize(0);
+            });
+            
+            TestUtil.Assert_Exception(() =>
+            {
+                builder.SetSendBufferSize(0);
+            });
+          
             const string ip = "127.0.0.1";
             const int port = 1919;
             const ProtocolType protocolType = ProtocolType.Udp;
             const SocketType socketType = SocketType.Dgram;
+            const int recvBufferSize = 8888;
+            const int sendBufferSize = 7777;
+            const bool noDelay = !SocketClientConfig.DEFAULT_NO_DELAY;
 
             builder.SetIp(ip)
                 .SetPort(port)
                 .SetProtocolType(protocolType)
-                .SetSocketType(socketType);
+                .SetSocketType(socketType)
+                .SetRecvBufferSize(recvBufferSize)
+                .SetSendBufferSize(sendBufferSize)
+                .SetNoDelay(noDelay);
 
             var config = builder.Build();
             Assert.NotNull(config);
@@ -50,6 +66,9 @@ namespace SimpleSocket.Test.ClientTest
             Assert.AreEqual(config.port, port);
             Assert.AreEqual(config.protocolType, protocolType);
             Assert.AreEqual(config.socketType, socketType);
+            Assert.AreEqual(config.recvBufferSize, recvBufferSize);
+            Assert.AreEqual(config.sendBufferSize, sendBufferSize);
+            Assert.AreEqual(config.noDelay, noDelay);
         }
     }
 }

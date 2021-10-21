@@ -5,8 +5,8 @@ namespace SimpleSocket.Client
 {
     public interface ISocketClientEventHandler
     {
-        void OnSocketClientClosed(SocketClient client);
-        void OnReceived(SocketClient client, object receivedData);
-        void OnError(SocketClient client, Exception ex, string message);
+        void OnSocketClientClosed(BaseSocketClient client);
+        void OnReceived(BaseSocketClient client, object receivedData);
+        void OnError(BaseSocketClient client, Exception ex, string message);
     }
 }

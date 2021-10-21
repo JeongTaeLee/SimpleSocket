@@ -6,19 +6,19 @@ using SimpleSocket.Common;
 
 namespace SimpleSocket.Server
 {
-    public abstract class SocketServer
+    public abstract class BaseSocketServer
     {
         private class ListenerPair
         {
             public SocketListenerConfig config { get; private set; } = null;
-            public SocketListener listener { get; private set; } = null;
+            public BaseSocketListener listener { get; private set; } = null;
 
             public ListenerPair(SocketListenerConfig config)
             {
                 this.config = config ?? throw new ArgumentNullException(nameof(config));
             }
 
-            public void SetListener(SocketListener listener)
+            public void SetListener(BaseSocketListener listener)
             {
                 this.listener = listener ?? throw new ArgumentNullException(nameof(listener));
             }
@@ -32,14 +32,17 @@ namespace SimpleSocket.Server
 
         private readonly IMessageFilterFactory _messageFilterFactory = null;
 
+        public readonly SocketServerOption option = null;
+
         public bool running { get; private set; } = false;
 
         public Action<SocketSessionConfigurator> onSessionConfiguration { get; set; } = null;
         public Action<Exception, string> onError { get; set; } = null;
 
-        public SocketServer(IMessageFilterFactory messageFilterFactory)
+        public BaseSocketServer(SocketServerOption option, IMessageFilterFactory messageFilterFactory)
         {
-            this._messageFilterFactory = messageFilterFactory;
+            this.option = option ?? throw new ArgumentNullException(nameof(option));
+            this._messageFilterFactory = messageFilterFactory ?? throw new ArgumentNullException(nameof(messageFilterFactory));
         }
 
         //
@@ -136,12 +139,19 @@ namespace SimpleSocket.Server
             }
         }
 
-        protected bool OnAcceptFromListener(SocketListener listener, Socket socket)
+        protected bool OnAcceptFromListener(BaseSocketListener listener, Socket socket)
         {
+            if (_sessions.Count >= option.maxConnection)
+            {
+                return false;
+            }
+
             string newSessionId = null;
 
             try
             {
+                socket.NoDelay = option.noDelay;
+
                 newSessionId = GenAndBookingSessionId();
                 if (string.IsNullOrEmpty(newSessionId))
                 {
@@ -197,7 +207,7 @@ namespace SimpleSocket.Server
             }
         }
 
-        protected void OnErrorFromListener(SocketListener listener, Exception ex, string message)
+        protected void OnErrorFromListener(BaseSocketListener listener, Exception ex, string message)
         {
             OnError(ex, $"Error! listener({listener.listenerConfig.ip}:{listener.listenerConfig.port}) - {message}");
         }
@@ -213,7 +223,7 @@ namespace SimpleSocket.Server
 
         protected virtual void InternalOnClose() { }
 
-        protected abstract SocketListener CreateListener();
+        protected abstract BaseSocketListener CreateListener();
 
         protected abstract SocketSession CreateSession(string sessionId);
 
@@ -244,7 +254,7 @@ namespace SimpleSocket.Server
             StopAllListener();
         }
 
-        public SocketServer AddListener(SocketListenerConfig config)
+        public BaseSocketServer AddListener(SocketListenerConfig config)
         {
             if (config == null)
             {
@@ -282,7 +292,7 @@ namespace SimpleSocket.Server
             return this;
         }
 
-        public SocketServer RemoveListener(string ip, int port)
+        public BaseSocketServer RemoveListener(string ip, int port)
         {
             if (!_listenerPairs.TryRemove((ip, port), out var listenerPair))
             {

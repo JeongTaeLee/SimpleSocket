@@ -96,13 +96,13 @@ namespace SimpleSocket.Test
         }
         
         public static ServerLauncher<TServer> ToServerLauncher<TServer>(this TServer server)
-            where TServer : SocketServer
+            where TServer : BaseSocketServer
         {
             return new ServerLauncher<TServer>(server);
         }
         
         public static ClientLauncher<TClient> ToClientLauncher<TClient>(this TClient client)
-            where TClient : SocketClient
+            where TClient : BaseSocketClient
         {
             return new ClientLauncher<TClient>(client);
         }

@@ -5,20 +5,14 @@ using SimpleSocket.Server.Components;
 
 namespace SimpleSocket.Server
 {
-    public class SocketAsyncEventArgsServer : SocketServer
+    public class SocketAsyncEventArgsServer : BaseSocketServer
     {
-        private readonly SocketAsyncEventArgsServerConfig _socketAsyncEventArgsConfig = null;
-        
         private readonly BufferManager _recvBufferManager = null;
         
-        public SocketAsyncEventArgsServer(SocketAsyncEventArgsServerConfig socketAsyncEventArgsConfig, IMessageFilterFactory msgFilterFactory)
-            : base(msgFilterFactory)
+        public SocketAsyncEventArgsServer(SocketServerOption option, IMessageFilterFactory msgFilterFactory)
+            : base(option, msgFilterFactory)
         {
-            _socketAsyncEventArgsConfig = socketAsyncEventArgsConfig ?? throw new ArgumentNullException(nameof(socketAsyncEventArgsConfig));
-
-            _recvBufferManager = new BufferManager(
-                _socketAsyncEventArgsConfig.recvBufferSize * _socketAsyncEventArgsConfig.maxConnection,
-                _socketAsyncEventArgsConfig.recvBufferSize);
+            _recvBufferManager = new BufferManager(option.recvBufferSize * option.maxConnection, option.recvBufferSize);
         }
 
         protected override void InternalOnStart()
@@ -26,7 +20,7 @@ namespace SimpleSocket.Server
             _recvBufferManager.InitBuffer();
         }
 
-        protected override SocketListener CreateListener()
+        protected override BaseSocketListener CreateListener()
         {
             return new SocketAsyncEventArgsListener();
         }
@@ -58,7 +52,7 @@ namespace SimpleSocket.Server
 
                     _recvBufferManager.FreeBuffer(recvEventArgs);
                     
-                    // TODO @jeongtae.lee : Ãß ÈÄ Ç®¸µ ¹æ½ÄÀ¸·Î º¯°æ.
+                    // TODO @jeongtae.lee : ï¿½ï¿½ ï¿½ï¿½ Ç®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
                     recvEventArgs.Dispose();
                 }
                 else

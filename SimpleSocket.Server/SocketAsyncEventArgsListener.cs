@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace SimpleSocket.Server
 {
-    public class SocketAsyncEventArgsListener : SocketListener
+    public class SocketAsyncEventArgsListener : BaseSocketListener
     {
         private SocketAsyncEventArgs _acceptArgs = null;
 

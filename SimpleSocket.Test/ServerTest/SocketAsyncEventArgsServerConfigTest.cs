@@ -5,12 +5,12 @@ using SimpleSocket.Server;
 namespace SimpleSocket.Test.ServerTest
 {
     [TestFixture]
-    public class SocketAsyncEventArgsServerConfigTest
+    public class SocketServerOptionConfigTest
     {
         [Test]
         public void SettingTest()
         {
-            var builder = new SocketAsyncEventArgsServerConfig.Builder();
+            var builder = new SocketServerOption.Builder();
 
             
             TestUtil.Assert_Exception(() =>
@@ -31,10 +31,12 @@ namespace SimpleSocket.Test.ServerTest
             var maxConnection = 9999;
             var recvBufferSize = 8888;
             var sendBufferSize = 7777;
+            var noDelay = !SocketServerOption.DEFAULT_NO_DELAY;
 
             builder.SetMaxConnection(maxConnection)
                 .SetRecvBufferSize(recvBufferSize)
-                .SetSendBufferSize(sendBufferSize);
+                .SetSendBufferSize(sendBufferSize)
+                .SetNoDelay(noDelay);
 
             var config = builder.Build();
             
@@ -42,6 +44,7 @@ namespace SimpleSocket.Test.ServerTest
             Assert.AreEqual(config.maxConnection, maxConnection);
             Assert.AreEqual(config.recvBufferSize, recvBufferSize);
             Assert.AreEqual(config.sendBufferSize, sendBufferSize);
+            Assert.AreEqual(config.noDelay, noDelay);
         }
     }
 }

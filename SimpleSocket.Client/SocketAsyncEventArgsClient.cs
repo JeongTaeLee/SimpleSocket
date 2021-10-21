@@ -6,20 +6,16 @@ using SimpleSocket.Common;
 
 namespace SimpleSocket.Client
 {
-    public class SocketAsyncEventArgsClient : SocketClient
+    public class SocketAsyncEventArgsClient : BaseSocketClient
     {
         private int _originOffset = 0;
         private int _currentOffset = 0;
         
         private SocketAsyncEventArgs _recvArgs = null; 
         
-        public readonly SocketAsyncEventArgsClientConfig socketAsyncEventArgsClientConfig = null;
-        
-        public SocketAsyncEventArgsClient(SocketAsyncEventArgsClientConfig socketAsyncEventArgsClientConfig
-            , SocketClientConfig socketClientConfig
-            , IMessageFilter messageFilter) : base (socketClientConfig, messageFilter)
+        public SocketAsyncEventArgsClient(SocketClientConfig socketClientConfig, IMessageFilter messageFilter) 
+            : base (socketClientConfig, messageFilter)
         {
-            this.socketAsyncEventArgsClientConfig = socketAsyncEventArgsClientConfig;
         }
 
         private void StartReceive(SocketAsyncEventArgs args)
@@ -104,9 +100,9 @@ namespace SimpleSocket.Client
             base.InternalOnStart();
 
             _recvArgs = new SocketAsyncEventArgs();
-            _recvArgs.SetBuffer(new byte[socketAsyncEventArgsClientConfig.recvBufferSize]
+            _recvArgs.SetBuffer(new byte[config.recvBufferSize]
                 , 0
-                , socketAsyncEventArgsClientConfig.recvBufferSize);
+                , config.recvBufferSize);
             _recvArgs.Completed += RecvArgs_Completed;
 
             _originOffset = _recvArgs.Offset;

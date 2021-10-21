@@ -5,17 +5,17 @@ using SimpleSocket.Common;
 
 namespace SimpleSocket.Server
 {
-    public abstract class SocketListener
+    public abstract class BaseSocketListener
     {
-        private Func<SocketListener, Socket, bool> _onAccept = null;
-        private Action<SocketListener, Exception, string> _onError = null;
+        private Func<BaseSocketListener, Socket, bool> _onAccept = null;
+        private Action<BaseSocketListener, Exception, string> _onError = null;
      
         protected Socket socket { get; private set; } = null;
 
         public SocketListenerConfig listenerConfig { get; private set; } = null;
         public bool running { get; private set; } = false;
         
-        public SocketListener()
+        public BaseSocketListener()
         {
         }
 
@@ -38,8 +38,8 @@ namespace SimpleSocket.Server
         }
         
         public void Start(SocketListenerConfig listenerConfig_
-            , Func<SocketListener, Socket, bool> onAccept
-            , Action<SocketListener, Exception, string> onError)
+            , Func<BaseSocketListener, Socket, bool> onAccept
+            , Action<BaseSocketListener, Exception, string> onError)
         {
             listenerConfig = listenerConfig_ ?? throw new ArgumentNullException(nameof(listenerConfig_));
             _onAccept = onAccept ?? throw new ArgumentNullException(nameof(onAccept));

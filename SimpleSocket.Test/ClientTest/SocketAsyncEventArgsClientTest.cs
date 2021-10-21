@@ -75,7 +75,7 @@ namespace SimpleSocket.Test.ClientTest
             };
 
 
-            var server = new SocketAsyncEventArgsServer(new SocketAsyncEventArgsServerConfig.Builder().Build()
+            var server = new SocketAsyncEventArgsServer(new SocketServerOption.Builder().Build()
                 , new GenericMessageFilterFactory<TestFilter>());
 
             server.onSessionConfiguration = (cnfger) =>
@@ -94,9 +94,8 @@ namespace SimpleSocket.Test.ClientTest
 
             using (var serverLauncher = server.ToServerLauncher())
             {
-                var argsConfig = new SocketAsyncEventArgsClientConfig.Builder().Build();
                 var config = new SocketClientConfig.Builder("127.0.0.1", serverPort).Build();
-                var client = new SocketAsyncEventArgsClient(argsConfig, config, new TestFilter());
+                var client = new SocketAsyncEventArgsClient(config, new TestFilter());
                 client.SetSocketClientEventHandler(clientEventHandler);
 
                 using (var clientLauncher = client.ToClientLauncher())
